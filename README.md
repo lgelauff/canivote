@@ -36,16 +36,16 @@ $ curl 'https://canivote.toolforge.org/check?user=Jimbo Wales&policy=meta-global
       "metric": "is_globally_locked",
       "label": "globally locked",
       "operator": "is",
-      "required": {"value": false, "display": "no"},
-      "observed": {"value": false, "display": "no", "bounded": false},
+      "required": {"value": false, "display": "not globally locked"},
+      "observed": {"value": false, "display": "not globally locked"},
       "passed": true
     },
     {
       "metric": "is_globally_blocked",
       "label": "globally blocked",
       "operator": "is",
-      "required": {"value": false, "display": "no"},
-      "observed": {"value": false, "display": "no", "bounded": false},
+      "required": {"value": false, "display": "not globally blocked"},
+      "observed": {"value": false, "display": "not globally blocked"},
       "passed": true
     }
   ],
@@ -66,6 +66,14 @@ $ curl 'https://canivote.toolforge.org/check?user=Jimbo Wales&policy=meta-global
 
 Field notes:
 
+- `metric` is the bare identifier; `label` is that metric **with its parameters**
+  applied. They are not one-to-one — German Wikipedia's policy has two `edit_count`
+  rules whose labels differ ("article-namespace edits on German Wikipedia" and
+  "...in the 12 months before that"), because they measure different quantities.
+  Switch on `metric`; show `label`.
+- `observed.bounded` appears only on counts. It means counting stopped once the
+  threshold was met, so the real number is that or higher — we do not look further
+  than the question needs.
 - `eligible` is a plain boolean, kept for clients that already read it.
 - `verdict` is `"eligible"`, `"not_eligible"`, or `"indeterminate"` — the tri-state
   `eligible` alone cannot express. A rule that could not be checked (see `passed: null`
