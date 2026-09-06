@@ -16,7 +16,7 @@ VALID_POLICY = {
     "language": "en",
     "title": "test",
     "scope": "test",
-    "sources": [],
+    "sources": ["https://nl.wikipedia.org/wiki/Wikipedia:Stemprocedure"],
     "verified": "2026-01-01",
     "original_text": "x",
     "english": "x",

@@ -53,7 +53,8 @@ $ curl 'https://canivote.toolforge.org/check?user=Jimbo Wales&policy=meta-global
     "language": "en",
     "original": "Global locks prevent an account from logging in to any Wikimedia wiki.",
     "english": "Your account must not be globally locked or globally blocked by stewards.",
-    "sources": ["https://meta.wikimedia.org/wiki/Global_locks", "..."],
+    "sources": ["https://meta.wikimedia.org/wiki/Global_locks",
+               "https://meta.wikimedia.org/wiki/Global_blocks"],
     "verified": "2026-09-01",
     "stale": false
   },

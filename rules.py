@@ -117,20 +117,27 @@ def apply(lookup, rule, moment):
             "unmeasurable": str(gap),
         }
 
+    # A bare "yes"/"no" against a label like "globally locked" makes the reader
+    # assemble the meaning themselves. Say the state outright instead.
+    def shown(value):
+        if isinstance(value, bool):
+            return label if value else f"not {label}"
+        return _readable(value)
+
+    observed = {"value": _machine(seen), "display": shown(seen)}
+    # `bounded` only means something for a count we deliberately stopped taking.
+    # On a boolean or a duration it is noise that reads like a missing feature.
+    if isinstance(seen, int) and not isinstance(seen, bool):
+        observed["bounded"] = isinstance(seen, AtLeast)
+
     result = {
         # `metric` is always the identifier and `label` always the prose. One
         # key, one kind of thing — a reader should never have to guess which.
         "metric": rule["metric"],
         "label": label,
         "operator": phrase,
-        "required": {"value": _machine(threshold), "display": _readable(threshold)},
-        "observed": {
-            "value": _machine(seen),
-            "display": _readable(seen),
-            # True when counting stopped at the threshold: the real number is
-            # this or higher, and we deliberately did not look further.
-            "bounded": isinstance(seen, AtLeast),
-        },
+        "required": {"value": _machine(threshold), "display": shown(threshold)},
+        "observed": observed,
         "passed": bool(compare(seen, threshold)),
     }
     if "offset" in rule:

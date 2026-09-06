@@ -37,6 +37,11 @@ STALE_AFTER_DAYS = 365
 CAPPED_METRICS = {"edit_count"}
 UNSAFE_WITH_CAPPING = {"at_most", "fewer_than"}
 
+REQUIRED_POLICY_FIELDS = (
+    "wiki", "language", "sources", "verified", "original_text", "english", "rules",
+)
+REQUIRED_RULE_FIELDS = ("metric", "operator", "value")
+
 
 def load_policies(path):
     """Read the policy file, refusing to start on a rule we cannot answer.
@@ -47,7 +52,30 @@ def load_policies(path):
     """
     policies = yaml.safe_load(Path(path).read_text())
     for policy_id, policy in policies.items():
+        def wrong(problem):
+            return ValueError(f"policy '{policy_id}': {problem}")
+
+        missing = [f for f in REQUIRED_POLICY_FIELDS if not policy.get(f) and f != "rules"]
+        if missing or "rules" not in policy:
+            raise wrong(f"missing {', '.join(missing or ['rules'])}")
+
+        # A verdict is only as good as the wording it claims to implement, so a
+        # source has to be somewhere a reader can actually go and check.
+        for source in policy["sources"]:
+            if not str(source).startswith(("https://", "http://")):
+                raise wrong(f"source {source!r} is not a URL")
+
+        # `verified` drives the staleness flag; an unparseable one would make
+        # every verdict silently claim to be freshly checked.
+        try:
+            datetime.fromisoformat(str(policy["verified"]))
+        except (TypeError, ValueError):
+            raise wrong(f"verified {policy['verified']!r} is not a date") from None
+
         for rule in policy["rules"]:
+            absent = [f for f in REQUIRED_RULE_FIELDS if f not in rule]
+            if absent:
+                raise wrong(f"a rule is missing {', '.join(absent)}")
             if (rule["metric"] in CAPPED_METRICS
                     and rule["operator"] in UNSAFE_WITH_CAPPING):
                 raise ValueError(
