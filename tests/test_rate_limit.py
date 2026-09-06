@@ -25,13 +25,12 @@ def test_429_makes_no_upstream_call_and_sends_retry_after(client, monkeypatch):
     assert codes.count(429) == 5
 
     first_429 = next(r for r in statuses if r.status_code == 429)
-    # NOTE: the plan (section C.3) calls for a `Retry-After` header on 429,
-    # but flask-limiter only emits it when the Limiter is constructed with
-    # `headers_enabled=True` — app.py's `Limiter(...)` does not set that, so
-    # this header is not actually present today. Asserting its absence here
-    # (rather than silently dropping the check) is deliberate: it should fail
-    # this test the moment that gets fixed, as a reminder to flip this back.
-    assert "Retry-After" not in first_429.headers
+    # A refusal has to say how long to wait, or a well-behaved client cannot
+    # back off correctly and an impatient one just retries immediately. This
+    # needs `headers_enabled=True` on the Limiter; without it flask-limiter
+    # sends no Retry-After at all.
+    assert "Retry-After" in first_429.headers
+    assert int(first_429.headers["Retry-After"]) > 0
 
     # Every 200 after the first was a cache hit; the 429s made no request at
     # all. Either way, exactly one real upstream call for the whole run.

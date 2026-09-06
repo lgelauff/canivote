@@ -66,8 +66,11 @@ app.json.sort_keys = False
 # One bucket per client. NOTE: Toolforge runs behind a front proxy, so this is
 # probably the proxy's address for everybody until the real hop count is known
 # and ProxyFix is pinned to it. This function is the single place to fix that.
+# headers_enabled is what makes flask-limiter emit Retry-After; without it a
+# well-behaved client has no way to learn how long to back off for.
 limiter = Limiter(lambda: request.remote_addr or "unknown", app=app,
-                  default_limits=[], storage_uri="memory://")
+                  default_limits=[], storage_uri="memory://",
+                  headers_enabled=True)
 
 _cache = OrderedDict()
 
