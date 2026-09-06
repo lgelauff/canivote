@@ -1,0 +1,1164 @@
+{
+  "https://en.wikipedia.org/w/api.php?action=query&list=usercontribs&ucuser=ExampleUser&uclimit=10&ucprop=ids&ucstart=2026-09-06T15%3A00%3A00Z&ucend=2025-09-11T15%3A00%3A00Z&format=json&formatversion=2&maxlag=5": {
+    "batchcomplete": true,
+    "continue": {
+      "continue": "-||",
+      "uccontinue": "20260124165759|1334613395"
+    },
+    "query": {
+      "usercontribs": [
+        {
+          "pageid": 59689765,
+          "parentid": 1340626369,
+          "revid": 1340626519,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 59689765,
+          "parentid": 1340590807,
+          "revid": 1340626369,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 3373029,
+          "parentid": 1322762373,
+          "revid": 1339193512,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 436510,
+          "parentid": 1339051240,
+          "revid": 1339192950,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 436510,
+          "parentid": 1337605553,
+          "revid": 1339045562,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 50915672,
+          "parentid": 1338322192,
+          "revid": 1338333240,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 50915672,
+          "parentid": 1337804679,
+          "revid": 1338308727,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 77140689,
+          "parentid": 1334614181,
+          "revid": 1334614235,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 77140689,
+          "parentid": 1334119581,
+          "revid": 1334614181,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 77133656,
+          "parentid": 1334613395,
+          "revid": 1334613623,
+          "user": "ExampleUser",
+          "userid": 200977
+        }
+      ]
+    }
+  },
+  "https://en.wikipedia.org/w/api.php?action=query&list=usercontribs&ucuser=ExampleUser&uclimit=150&ucprop=ids&ucnamespace=0&ucstart=2026-09-06T15%3A00%3A00Z&format=json&formatversion=2&maxlag=5": {
+    "batchcomplete": true,
+    "continue": {
+      "continue": "-||",
+      "uccontinue": "20210822210003|1040138888"
+    },
+    "query": {
+      "usercontribs": [
+        {
+          "pageid": 50915672,
+          "parentid": 1338322192,
+          "revid": 1338333240,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 50915672,
+          "parentid": 1337804679,
+          "revid": 1338308727,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 77133656,
+          "parentid": 1334613395,
+          "revid": 1334613623,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 77133656,
+          "parentid": 1329188241,
+          "revid": 1334613395,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 3183585,
+          "parentid": 1334091109,
+          "revid": 1334091386,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 3183585,
+          "parentid": 1320287442,
+          "revid": 1334091109,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 82130901,
+          "parentid": 1333210107,
+          "revid": 1333210222,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 82130901,
+          "parentid": 1333209802,
+          "revid": 1333210107,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 82130901,
+          "parentid": 1333209793,
+          "revid": 1333209802,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 82130901,
+          "parentid": 1333209766,
+          "revid": 1333209793,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 82130901,
+          "parentid": 0,
+          "revid": 1333209766,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 4549356,
+          "parentid": 1333128822,
+          "revid": 1333206263,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 19825718,
+          "parentid": 1333155585,
+          "revid": 1333203432,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 70729629,
+          "parentid": 1333201930,
+          "revid": 1333203349,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 75161447,
+          "parentid": 1333201963,
+          "revid": 1333203176,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 78407210,
+          "parentid": 1333202016,
+          "revid": 1333202974,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 82124340,
+          "parentid": 1333202055,
+          "revid": 1333202522,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 69112849,
+          "parentid": 1333169289,
+          "revid": 1333202504,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 82124357,
+          "parentid": 1333202082,
+          "revid": 1333202467,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 82124357,
+          "parentid": 1333129180,
+          "revid": 1333202082,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 82124340,
+          "parentid": 1333071149,
+          "revid": 1333202055,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 78407210,
+          "parentid": 1326299831,
+          "revid": 1333202016,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 75161447,
+          "parentid": 1322731884,
+          "revid": 1333201963,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 70729629,
+          "parentid": 1286724575,
+          "revid": 1333201930,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 44343236,
+          "parentid": 1329740751,
+          "revid": 1333073437,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 33527644,
+          "parentid": 1331143219,
+          "revid": 1333073212,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 32552630,
+          "parentid": 1329744517,
+          "revid": 1333073046,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 32229454,
+          "parentid": 1329741055,
+          "revid": 1333072964,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 32228809,
+          "parentid": 1329740910,
+          "revid": 1333072859,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 31880186,
+          "parentid": 1329742395,
+          "revid": 1333072765,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 22643364,
+          "parentid": 1329744265,
+          "revid": 1333072622,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 22643349,
+          "parentid": 1294287133,
+          "revid": 1333072462,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 22643316,
+          "parentid": 1329744557,
+          "revid": 1333072274,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 19825718,
+          "parentid": 1298048130,
+          "revid": 1333072105,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 11170204,
+          "parentid": 1321560761,
+          "revid": 1333072057,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 9916906,
+          "parentid": 1329831541,
+          "revid": 1333071940,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 1674236,
+          "parentid": 1326225419,
+          "revid": 1333071774,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 826800,
+          "parentid": 1332401414,
+          "revid": 1333071740,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 82124357,
+          "parentid": 1333071456,
+          "revid": 1333071601,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 82124357,
+          "parentid": 0,
+          "revid": 1333071456,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 31880279,
+          "parentid": 1311946018,
+          "revid": 1333071455,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 82124340,
+          "parentid": 0,
+          "revid": 1333071149,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 57514358,
+          "parentid": 1326307319,
+          "revid": 1331460187,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 78742235,
+          "parentid": 1301585224,
+          "revid": 1326759236,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 78744597,
+          "parentid": 1278200532,
+          "revid": 1326759039,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 76998238,
+          "parentid": 1302187882,
+          "revid": 1323084359,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 18603335,
+          "parentid": 1306610997,
+          "revid": 1315475567,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 13948284,
+          "parentid": 1299722659,
+          "revid": 1313863082,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 8663,
+          "parentid": 1292561741,
+          "revid": 1299969698,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 1280312,
+          "parentid": 1290443694,
+          "revid": 1299557169,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 79914395,
+          "parentid": 1289441714,
+          "revid": 1289441745,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 79914395,
+          "parentid": 1289441531,
+          "revid": 1289441554,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 32290,
+          "parentid": 1271022244,
+          "revid": 1271154764,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 34746921,
+          "parentid": 1233803475,
+          "revid": 1271132105,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 3344866,
+          "parentid": 1250847704,
+          "revid": 1256358296,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 67537,
+          "parentid": 1243996618,
+          "revid": 1244033097,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 38772108,
+          "parentid": 1226221569,
+          "revid": 1242762743,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 77732140,
+          "parentid": 1242628601,
+          "revid": 1242628633,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 77732140,
+          "parentid": 0,
+          "revid": 1242628601,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 2165356,
+          "parentid": 1242058188,
+          "revid": 1242058491,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 2165356,
+          "parentid": 1237147707,
+          "revid": 1242058188,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 511302,
+          "parentid": 1237648674,
+          "revid": 1240547269,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 42019907,
+          "parentid": 1239750416,
+          "revid": 1239754239,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 77071838,
+          "parentid": 1238080208,
+          "revid": 1238080249,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 77071838,
+          "parentid": 1227540416,
+          "revid": 1238080208,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 38571505,
+          "parentid": 1211631835,
+          "revid": 1238070982,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 799542,
+          "parentid": 1199209470,
+          "revid": 1235683095,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 48770600,
+          "parentid": 1206391946,
+          "revid": 1235548239,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 3856281,
+          "parentid": 1221426798,
+          "revid": 1221583464,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 3856281,
+          "parentid": 1221302501,
+          "revid": 1221302569,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 3856281,
+          "parentid": 1218548300,
+          "revid": 1221302501,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 2215266,
+          "parentid": 1219441083,
+          "revid": 1219442801,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 163034,
+          "parentid": 1195072955,
+          "revid": 1195073970,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 163034,
+          "parentid": 1195072425,
+          "revid": 1195072955,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 163034,
+          "parentid": 1181522643,
+          "revid": 1195072425,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 25108801,
+          "parentid": 1173366510,
+          "revid": 1194790274,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 4035279,
+          "parentid": 1172889381,
+          "revid": 1194048834,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 2119576,
+          "parentid": 1179537379,
+          "revid": 1179572487,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 2629179,
+          "parentid": 1176628531,
+          "revid": 1176631309,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 2629179,
+          "parentid": 1176627617,
+          "revid": 1176628531,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 2629179,
+          "parentid": 1176627210,
+          "revid": 1176627617,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 2629179,
+          "parentid": 1176627096,
+          "revid": 1176627210,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 2629179,
+          "parentid": 1176391744,
+          "revid": 1176627096,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 33804610,
+          "parentid": 1112757174,
+          "revid": 1172461182,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 31831278,
+          "parentid": 1168920181,
+          "revid": 1169266777,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 7227755,
+          "parentid": 1151540593,
+          "revid": 1151543287,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 69715,
+          "parentid": 1147833016,
+          "revid": 1148066102,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 20779257,
+          "parentid": 1144839767,
+          "revid": 1146437640,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 35865401,
+          "parentid": 1081922114,
+          "revid": 1142841996,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 35870911,
+          "parentid": 1081921950,
+          "revid": 1142841841,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 35870332,
+          "parentid": 1081910160,
+          "revid": 1142841743,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 29463284,
+          "parentid": 1130735070,
+          "revid": 1142740889,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 49509538,
+          "parentid": 1133961633,
+          "revid": 1134070623,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 8579234,
+          "parentid": 1128826619,
+          "revid": 1132489026,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 30860636,
+          "parentid": 1132007832,
+          "revid": 1132008039,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 30860636,
+          "parentid": 1132007657,
+          "revid": 1132007832,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 30860636,
+          "parentid": 1120446845,
+          "revid": 1132007657,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 65772682,
+          "parentid": 1131986579,
+          "revid": 1131986611,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 65772682,
+          "parentid": 1131986413,
+          "revid": 1131986564,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 65772682,
+          "parentid": 1131985838,
+          "revid": 1131985896,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 65772682,
+          "parentid": 1131985011,
+          "revid": 1131985026,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 65772682,
+          "parentid": 1131984505,
+          "revid": 1131984513,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 65772682,
+          "parentid": 1131983977,
+          "revid": 1131984027,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 65772682,
+          "parentid": 1131983864,
+          "revid": 1131983904,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 15328,
+          "parentid": 1108420070,
+          "revid": 1113927612,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 3283847,
+          "parentid": 1112017906,
+          "revid": 1112197099,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 39684267,
+          "parentid": 1110693762,
+          "revid": 1112197048,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 322247,
+          "parentid": 1103785383,
+          "revid": 1103923402,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 2206070,
+          "parentid": 1101415807,
+          "revid": 1101415854,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 2206070,
+          "parentid": 1101393405,
+          "revid": 1101415807,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 59798897,
+          "parentid": 1095707159,
+          "revid": 1097853540,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 67366,
+          "parentid": 1090812156,
+          "revid": 1090880696,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 4024423,
+          "parentid": 1090644514,
+          "revid": 1090879709,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 61313633,
+          "parentid": 1090076382,
+          "revid": 1090510881,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 68771087,
+          "parentid": 1090508929,
+          "revid": 1090509168,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 67809497,
+          "parentid": 1079533854,
+          "revid": 1090509128,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 68771087,
+          "parentid": 1090508811,
+          "revid": 1090508929,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 68771087,
+          "parentid": 1081263918,
+          "revid": 1090508811,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 36062797,
+          "parentid": 1072585990,
+          "revid": 1088094347,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 12128498,
+          "parentid": 1088012673,
+          "revid": 1088012984,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 12128498,
+          "parentid": 1055163008,
+          "revid": 1088012673,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 2113048,
+          "parentid": 1085827141,
+          "revid": 1085827166,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 2113048,
+          "parentid": 1084054425,
+          "revid": 1085827141,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 909036,
+          "parentid": 1083439435,
+          "revid": 1083470080,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 49884441,
+          "parentid": 1075973052,
+          "revid": 1076820974,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 61631028,
+          "parentid": 1071660480,
+          "revid": 1076820912,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 70237802,
+          "parentid": 0,
+          "revid": 1075460813,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 1392365,
+          "parentid": 1075087916,
+          "revid": 1075088046,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 1392365,
+          "parentid": 1062008451,
+          "revid": 1075087916,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 519638,
+          "parentid": 1074490632,
+          "revid": 1074803335,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 64787957,
+          "parentid": 1048303494,
+          "revid": 1074592194,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 737,
+          "parentid": 1068533347,
+          "revid": 1068762863,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 2564567,
+          "parentid": 1048071977,
+          "revid": 1065917436,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 4941747,
+          "parentid": 984380534,
+          "revid": 1061423765,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 68548561,
+          "parentid": 1054808603,
+          "revid": 1054929281,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 54789352,
+          "parentid": 1046952878,
+          "revid": 1047901750,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 37722815,
+          "parentid": 1047055134,
+          "revid": 1047055515,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 37722815,
+          "parentid": 1046880709,
+          "revid": 1047055134,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 37722815,
+          "parentid": 1046455469,
+          "revid": 1046462731,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 37722815,
+          "parentid": 1046455402,
+          "revid": 1046455455,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 49050171,
+          "parentid": 1046084407,
+          "revid": 1046085187,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 351437,
+          "parentid": 1045246370,
+          "revid": 1045656409,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 15578802,
+          "parentid": 1037814044,
+          "revid": 1042792476,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 54789352,
+          "parentid": 1040400477,
+          "revid": 1040449196,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 54789352,
+          "parentid": 1040354925,
+          "revid": 1040356097,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 54789352,
+          "parentid": 1017215600,
+          "revid": 1040354925,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 68548573,
+          "parentid": 0,
+          "revid": 1040330060,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 68548561,
+          "parentid": 1040329942,
+          "revid": 1040329984,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 68548561,
+          "parentid": 1040329816,
+          "revid": 1040329942,
+          "user": "ExampleUser",
+          "userid": 200977
+        },
+        {
+          "pageid": 68548561,
+          "parentid": 0,
+          "revid": 1040329816,
+          "user": "ExampleUser",
+          "userid": 200977
+        }
+      ]
+    }
+  },
+  "https://en.wikipedia.org/w/api.php?action=query&list=users&ususers=ExampleUser&usprop=groups%7Cblockinfo%7Cregistration&format=json&formatversion=2&maxlag=5": {
+    "batchcomplete": true,
+    "query": {
+      "users": [
+        {
+          "groups": [
+            "autoreviewer",
+            "eventcoordinator",
+            "extendedconfirmed",
+            "*",
+            "user",
+            "autoconfirmed"
+          ],
+          "name": "ExampleUser",
+          "registration": "2005-02-28T11:56:14Z",
+          "userid": 200977
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,138 @@
+"""Rules: one metric, one operator, one value, one result.
+
+A rule is a mathematical statement about a measured quantity, and nothing more.
+It carries no wiki-specific knowledge — that lives in metrics.py — and no
+judgement about what a community meant, which lives in the policy's own words.
+
+A rule may shift the moment it is measured at. Dutch Wikipedia asks for edits
+made before the vote was proposed but for a first edit two weeks before the
+vote opened; `offset` expresses that difference without inventing a taxonomy of
+reference points.
+"""
+
+from datetime import timedelta
+
+from metrics import AtLeast, NotMeasurable, describe_span, measure
+
+UNITS = {
+    "days": 1,
+    "weeks": 7,
+    "months": 30,   # policies say "two months"; nobody means 61 days exactly
+    "years": 365,
+}
+
+OPERATORS = {
+    "at_least": (lambda seen, want: seen >= want, "at least"),
+    "more_than": (lambda seen, want: seen > want, "more than"),
+    "at_most": (lambda seen, want: seen <= want, "at most"),
+    "fewer_than": (lambda seen, want: seen < want, "fewer than"),
+    "is": (lambda seen, want: seen == want, "is"),
+    "includes": (lambda seen, want: want in seen, "includes"),
+    "excludes": (lambda seen, want: want not in seen, "does not include"),
+}
+
+
+class UnknownOperator(Exception):
+    """A rule uses a comparison this tool does not know."""
+
+
+def as_duration(value):
+    """{'amount': 2, 'unit': 'weeks'} -> timedelta. Plain integers mean days."""
+    if isinstance(value, dict):
+        return timedelta(days=value["amount"] * UNITS[value["unit"]])
+    return timedelta(days=value)
+
+
+def _machine(value):
+    """The same value as JSON a consumer can compute with.
+
+    The English rendering is for people; this is so wiki-polis can say "you
+    need 43 more edits" and a translator can put it in another language.
+    Durations become whole days, which is the coarsest unit every policy here
+    is written in.
+    """
+    if isinstance(value, timedelta):
+        return value.days
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, AtLeast):
+        return int(value)
+    if isinstance(value, (int, list, str)):
+        return value
+    return str(value)
+
+
+def _readable(value):
+    """Render a measured value or a threshold as English."""
+    if isinstance(value, timedelta):
+        return describe_span(value)
+    if isinstance(value, AtLeast):
+        return str(value)
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    if isinstance(value, list):
+        return ", ".join(value) if value else "none"
+    if isinstance(value, int):
+        return f"{value:,}"
+    return str(value)
+
+
+def apply(lookup, rule, moment):
+    """Evaluate one rule, returning a dict that reads plainly as JSON."""
+    try:
+        compare, phrase = OPERATORS[rule["operator"]]
+    except KeyError:
+        raise UnknownOperator(rule.get("operator")) from None
+
+    as_of = moment - as_duration(rule["offset"]) if "offset" in rule else moment
+    threshold = rule["value"]
+    parameters = {
+        key: value for key, value in rule.items()
+        if key not in ("metric", "operator", "value", "offset")
+    }
+    # A trailing window is written the way policies write it ("12 months").
+    if "within" in parameters:
+        parameters["within"] = as_duration(parameters["within"])
+
+    # A threshold written as {amount, unit} is a duration and has to become a
+    # timedelta before it can be compared with one.
+    if isinstance(threshold, dict):
+        threshold = as_duration(threshold)
+    # A count threshold doubles as the cap, so counting can stop once it is met.
+    if rule["metric"] == "edit_count":
+        parameters["cap"] = threshold + (1 if rule["operator"] == "more_than" else 0)
+
+    try:
+        seen, label = measure(lookup, rule["metric"], as_of, **parameters)
+    except NotMeasurable as gap:
+        # Neither pass nor fail: a rule we cannot evaluate must not be scored as
+        # though we had, in either direction.
+        return {
+            "metric": rule["metric"],
+            "label": rule["metric"],
+            "operator": phrase,
+            "required": {"value": _machine(threshold), "display": _readable(threshold)},
+            "observed": None,
+            "passed": None,
+            "unmeasurable": str(gap),
+        }
+
+    result = {
+        # `metric` is always the identifier and `label` always the prose. One
+        # key, one kind of thing — a reader should never have to guess which.
+        "metric": rule["metric"],
+        "label": label,
+        "operator": phrase,
+        "required": {"value": _machine(threshold), "display": _readable(threshold)},
+        "observed": {
+            "value": _machine(seen),
+            "display": _readable(seen),
+            # True when counting stopped at the threshold: the real number is
+            # this or higher, and we deliberately did not look further.
+            "bounded": isinstance(seen, AtLeast),
+        },
+        "passed": bool(compare(seen, threshold)),
+    }
+    if "offset" in rule:
+        result["measured"] = f"{describe_span(as_duration(rule['offset']))} earlier"
+    return result

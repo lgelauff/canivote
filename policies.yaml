@@ -1,0 +1,174 @@
+# Voter-eligibility policies, one per wiki and procedure.
+#
+# Each policy carries the community's own wording verbatim, an English rendering
+# of it, and the rules that wording decomposes into. Editing this file is how
+# eligibility changes: a reviewable diff, not a code change. /policies serves it,
+# so what is written here is what the public sees.
+#
+# `not_modelled` is not an oversight. Some clauses are human judgements and are
+# recorded so a verdict never looks more complete than it is.
+
+nlwiki-stemprocedure:
+  wiki: nl.wikipedia.org
+  language: nl
+  title: Voting eligibility on Dutch Wikipedia
+  scope: All votes (stemmingen) held under the Stemprocedure
+  sources:
+    - https://nl.wikipedia.org/wiki/Wikipedia:Stemprocedure
+    - https://nl.wikipedia.org/wiki/Wikipedia:Stemlokaal/Stemgerechtigde_gebruikers
+  verified: 2026-09-01
+  original_text: >-
+    hij of zij heeft (minstens) twee weken voor het begin van de stemming zijn
+    eerste bewerking gedaan als aangemelde gebruiker; hij of zij had meer dan
+    100 bewerkingen (geen vandalisme) gedaan voordat het stemvoorstel in het
+    stemlokaal (of subpagina daarvan) gezet werd.
+  english: >-
+    You must have made your first edit as a registered user at least two weeks
+    before the vote opened, and have made more than 100 edits before the
+    proposal was posted.
+  rules:
+    - metric: time_since_first_edit
+      wiki: nl.wikipedia.org
+      operator: at_least
+      value: {amount: 2, unit: weeks}
+    - metric: edit_count
+      wiki: nl.wikipedia.org
+      operator: more_than
+      value: 100
+  not_modelled:
+    - >-
+      "geen vandalisme" — the 100 edits must not be vandalism. Whether an edit
+      is vandalism is a human judgement and is not checked here.
+  notes: >-
+    The two clauses use different reference points: the vote opening and the
+    proposal being posted. Set `offset` on the edit-count rule to the gap
+    between them if a particular vote needs that precision.
+
+dewiki-stimmberechtigung:
+  wiki: de.wikipedia.org
+  language: de
+  title: Voting eligibility on German Wikipedia
+  scope: Meinungsbilder, admin and functionary elections, recalls, user bans
+  sources:
+    - https://de.wikipedia.org/wiki/Wikipedia:Stimmberechtigung
+  verified: 2026-09-01
+  original_text: >-
+    Der Benutzer ist angemeldet. Der Benutzer hat seit mindestens zwei Monaten
+    aktiv mitgearbeitet. Der Benutzer hat mindestens 200 Bearbeitungen (Edits)
+    im Artikelnamensraum vorgenommen, und davon mindestens 50 in den letzten
+    12 Monaten.
+  english: >-
+    You must be logged in, have been actively contributing for at least two
+    months, and have made at least 200 edits in the article namespace, of which
+    at least 50 in the last twelve months.
+  rules:
+    - metric: time_since_first_edit
+      wiki: de.wikipedia.org
+      operator: at_least
+      value: {amount: 2, unit: months}
+    - metric: edit_count
+      wiki: de.wikipedia.org
+      namespace: article
+      operator: at_least
+      value: 200
+    - metric: edit_count
+      wiki: de.wikipedia.org
+      namespace: article
+      within: {amount: 12, unit: months}
+      operator: at_least
+      value: 50
+  notes: >-
+    The policy is explicit that account creation does not count — the first
+    *edit* must be two months old. German Wikipedia runs its own checker at
+    toollabs:stimmberechtigung.
+
+enwiki-arbcom:
+  wiki: en.wikipedia.org
+  language: en
+  title: Arbitration Committee election eligibility on English Wikipedia
+  scope: >-
+    ArbCom elections, the only community SecurePoll election on this wiki.
+    Requests for adminship deliberately have no voter criteria.
+  sources:
+    - https://en.wikipedia.org/wiki/Wikipedia:Arbitration_Committee_Election/Rules
+  verified: 2026-09-01
+  original_text: >-
+    A voter needs 150 mainspace edits on English Wikipedia by 1 November, 10
+    live edits on English Wikipedia (in any namespace) within one year of
+    1 November, and to have registered an account before 1 October, not
+    currently sitewide blocked at the time of voting. Bots are excluded.
+  english: >-
+    You must have 150 article-namespace edits, 10 edits of any kind in the past
+    year, an account created at least a month before the cutoff, no site-wide
+    block, and not be a bot.
+  rules:
+    - metric: edit_count
+      wiki: en.wikipedia.org
+      namespace: article
+      operator: at_least
+      value: 150
+    - metric: edit_count
+      wiki: en.wikipedia.org
+      within: {amount: 12, unit: months}
+      operator: at_least
+      value: 10
+    - metric: time_since_registration
+      wiki: en.wikipedia.org
+      operator: at_least
+      value: {amount: 1, unit: months}
+    - metric: is_blocked
+      wiki: en.wikipedia.org
+      operator: is
+      value: false
+    - metric: user_groups
+      wiki: en.wikipedia.org
+      operator: excludes
+      value: bot
+  not_modelled:
+    - >-
+      Accounts renamed to names containing "Vanished" or "Renamed" are excluded.
+    - >-
+      All requirements must be met from the same named account.
+  notes: >-
+    The real policy fixes calendar dates (1 October, 1 November) that are reset
+    for each annual election. They are expressed here as durations before the
+    moment of asking, which stays correct year to year.
+
+meta-global:
+  wiki: meta.wikimedia.org
+  language: en
+  title: Not blocked anywhere in the movement
+  scope: >-
+    A minimal baseline for cross-wiki consultations: no per-project activity
+    bar, only that the account is in good standing movement-wide.
+  sources:
+    - https://meta.wikimedia.org/wiki/Global_locks
+    - https://meta.wikimedia.org/wiki/Global_blocks
+  verified: 2026-09-01
+  original_text: >-
+    Global locks prevent an account from logging in to any Wikimedia wiki.
+  english: >-
+    Your account must not be globally locked or globally blocked by stewards.
+  rules:
+    - metric: is_globally_locked
+      operator: is
+      value: false
+    - metric: is_globally_blocked
+      operator: is
+      value: false
+
+frwiki-sondage:
+  wiki: fr.wikipedia.org
+  language: fr
+  title: Surveys and decisions on French Wikipedia
+  scope: Sondages and prises de décision
+  sources:
+    - https://fr.wikipedia.org/wiki/Aide:Sondage
+  verified: 2026-09-01
+  original_text: La conduite du sondage est totalement libre.
+  english: The conduct of a survey is entirely open.
+  rules: []
+  notes: >-
+    A deliberate empty case. French Wikipedia codifies no voter eligibility for
+    surveys, and "no formal requirement" is a real answer rather than missing
+    data. Everyone passes.

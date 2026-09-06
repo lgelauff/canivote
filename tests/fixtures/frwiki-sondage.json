@@ -1,0 +1,19 @@
+{
+  "https://fr.wikipedia.org/w/api.php?action=query&list=users&ususers=ExampleUser&usprop=groups%7Cblockinfo%7Cregistration&format=json&formatversion=2&maxlag=5": {
+    "batchcomplete": true,
+    "query": {
+      "users": [
+        {
+          "groups": [
+            "*",
+            "user",
+            "autoconfirmed"
+          ],
+          "name": "ExampleUser",
+          "registration": null,
+          "userid": 22702
+        }
+      ]
+    }
+  }
+}

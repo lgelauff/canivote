@@ -1,0 +1,31 @@
+{
+  "name": "canivote",
+  "title": "canivote",
+  "description": "Does a Wikimedia account meet a community's voting-eligibility policy? Answers over HTTP, showing the community's own wording, an English rendering, per-rule pass/fail, and the exact API queries used, so anyone can reproduce the verdict by hand.",
+  "url": "https://canivote.toolforge.org/",
+  "repository": "https://github.com/lgelauff/canivote",
+  "bugtracker_url": "https://github.com/lgelauff/canivote/issues",
+  "api_url": "https://canivote.toolforge.org/check",
+  "license": "MIT",
+  "author": [
+    {
+      "name": "lgelauff"
+    }
+  ],
+  "tool_type": "api",
+  "technology_used": [
+    "python",
+    "flask"
+  ],
+  "for_wikis": [
+    "*"
+  ],
+  "keywords": [
+    "voting",
+    "eligibility",
+    "elections",
+    "suffrage"
+  ],
+  "developer_docs_url": "https://github.com/lgelauff/canivote#readme",
+  "experimental": true
+}

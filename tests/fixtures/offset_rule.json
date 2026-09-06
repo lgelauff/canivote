@@ -1,0 +1,20 @@
+{
+  "https://nl.wikipedia.org/w/api.php?action=query&list=usercontribs&ucuser=ExampleUser&uclimit=1&ucprop=ids&ucstart=2026-08-07T15%3A00%3A00Z&format=json&formatversion=2&maxlag=5": {
+    "batchcomplete": true,
+    "continue": {
+      "continue": "-||",
+      "uccontinue": "20260802103238|71692350"
+    },
+    "query": {
+      "usercontribs": [
+        {
+          "pageid": 6067334,
+          "parentid": 71715983,
+          "revid": 71729988,
+          "user": "ExampleUser",
+          "userid": 8575
+        }
+      ]
+    }
+  }
+}

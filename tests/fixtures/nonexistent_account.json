@@ -1,0 +1,13 @@
+{
+  "https://nl.wikipedia.org/w/api.php?action=query&list=users&ususers=ThisAccountShouldNotExist0000&usprop=groups%7Cblockinfo%7Cregistration&format=json&formatversion=2&maxlag=5": {
+    "batchcomplete": true,
+    "query": {
+      "users": [
+        {
+          "missing": true,
+          "name": "ThisAccountShouldNotExist0000"
+        }
+      ]
+    }
+  }
+}

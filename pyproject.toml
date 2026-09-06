@@ -1,0 +1,38 @@
+[project]
+name = "canivote"
+version = "0.1.0"
+description = "Does a Wikimedia account meet a community's voting-eligibility policy?"
+readme = "README.md"
+license = { file = "LICENSE" }
+# The local dev venv is 3.14; Toolforge's actual image is not yet confirmed
+# (`toolforge webservice --list-image-types` needs a Toolforge bastion to run).
+# Tighten this once that has been checked against what's really offered.
+requires-python = ">=3.11"
+dependencies = [
+    "flask",
+    "flask-limiter",
+    "pyyaml",
+    "requests",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 92
+
+[tool.ruff.lint]
+# Ruff's own long-standing default selection (pyflakes + a slice of
+# pycodestyle). Pinned explicitly rather than left implicit, since this
+# installed ruff's out-of-the-box default turned out to be far broader --
+# enabling most of pyupgrade, flake8-datetimez, isort etc. would flag style
+# choices in app.py/mediawiki.py/rules.py/metrics.py that are out of scope
+# here to change.
+select = ["E4", "E7", "E9", "F"]
