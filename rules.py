@@ -84,6 +84,11 @@ def apply(lookup, rule, moment):
     except KeyError:
         raise UnknownOperator(rule.get("operator")) from None
 
+    # Where the measurement applies. A consumer can then group criteria by
+    # wiki, or say "you meet the global requirements but not the German ones",
+    # without parsing it back out of the English label.
+    scope = rule.get("wiki", "global")
+
     as_of = moment - as_duration(rule["offset"]) if "offset" in rule else moment
     threshold = rule["value"]
     parameters = {
@@ -110,6 +115,7 @@ def apply(lookup, rule, moment):
         return {
             "metric": rule["metric"],
             "label": rule["metric"],
+            "scope": scope,
             "operator": phrase,
             "required": {"value": _machine(threshold), "display": _readable(threshold)},
             "observed": None,
@@ -135,6 +141,7 @@ def apply(lookup, rule, moment):
         # key, one kind of thing — a reader should never have to guess which.
         "metric": rule["metric"],
         "label": label,
+        "scope": scope,
         "operator": phrase,
         "required": {"value": _machine(threshold), "display": shown(threshold)},
         "observed": observed,

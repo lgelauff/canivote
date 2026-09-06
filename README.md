@@ -35,6 +35,7 @@ $ curl 'https://canivote.toolforge.org/check?user=Jimbo Wales&policy=meta-global
     {
       "metric": "is_globally_locked",
       "label": "globally locked",
+      "scope": "global",
       "operator": "is",
       "required": {"value": false, "display": "not globally locked"},
       "observed": {"value": false, "display": "not globally locked"},
@@ -43,6 +44,7 @@ $ curl 'https://canivote.toolforge.org/check?user=Jimbo Wales&policy=meta-global
     {
       "metric": "is_globally_blocked",
       "label": "globally blocked",
+      "scope": "global",
       "operator": "is",
       "required": {"value": false, "display": "not globally blocked"},
       "observed": {"value": false, "display": "not globally blocked"},
@@ -71,6 +73,9 @@ Field notes:
   rules whose labels differ ("article-namespace edits on German Wikipedia" and
   "...in the 12 months before that"), because they measure different quantities.
   Switch on `metric`; show `label`.
+- `scope` is where the measurement applies: a wiki hostname such as
+  `de.wikipedia.org`, or `global` for anything CentralAuth answers (locks and
+  global blocks). Group by it to say which set of requirements someone fails.
 - `observed.bounded` appears only on counts. It means counting stopped once the
   threshold was met, so the real number is that or higher — we do not look further
   than the question needs.
