@@ -30,6 +30,7 @@ from flask import Flask, jsonify, request
 from flask_limiter import Limiter
 
 import mediawiki
+import metrics
 import rules
 from mediawiki import REPOSITORY
 from metrics import UnknownMetric
@@ -49,8 +50,8 @@ RATE_LIMIT = (
 
 
 # Conditions that hold whoever is asking, because they come from how Wikimedia
-# works rather than from anything a community wrote. A global lock stops an
-# account editing everywhere; a site-wide block stops it editing here. Neither
+# works rather than from anything a community wrote — a global lock stops an
+# account editing anywhere at all. Neither
 # appears in a policy page, because neither needed saying.
 #
 # They are applied to every policy unless it opts out with `baseline: false`,
@@ -77,7 +78,7 @@ def baseline_rules(policy):
 
 
 def load_policies(path):
-    """Read the policy file, refusing to start on a rule we cannot answer.
+    """Read the policy file, refusing to start on anything we cannot answer.
 
     A wrong verdict is worse than no service, and policies.yaml is meant to be
     a file a non-programmer edits by diff — so what cannot be answered honestly
@@ -91,6 +92,19 @@ def load_policies(path):
             if not str(source).startswith(("https://", "http://")):
                 raise ValueError(f"policy '{policy_id}': source {source!r} is not a URL")
         for rule in policy["rules"]:
+            # A typo in a metric or operator name would otherwise load fine and
+            # 500 at request time. This file is meant to be edited by someone
+            # who does not read Python, so it fails here instead, by name.
+            if rule["metric"] not in metrics.METRICS:
+                raise ValueError(
+                    f"policy '{policy_id}': unknown metric {rule['metric']!r}. "
+                    f"Known: {', '.join(sorted(metrics.METRICS))}"
+                )
+            if rule["operator"] not in rules.OPERATORS:
+                raise ValueError(
+                    f"policy '{policy_id}': unknown operator {rule['operator']!r}. "
+                    f"Known: {', '.join(sorted(rules.OPERATORS))}"
+                )
             if rule["metric"] != "edit_count":
                 continue
             # We settle a count by asking for one row per edit up to the
