@@ -1,4 +1,11 @@
-"""One-off script: record real MediaWiki API responses as test fixtures.
+"""Re-record the fixtures from the live API.
+
+Run this when `policies.yaml` changes, when a query's shape changes, or when a
+verdict looks wrong in a way the recorded responses cannot explain. Nothing
+detects a stale fixture automatically: the MediaWiki API could change shape and
+the suite would stay green until somebody noticed a wrong answer in production.
+
+One-off script: record real MediaWiki API responses as test fixtures.
 
 Not part of the test suite (no test_ prefix, not collected by pytest). Run by
 hand, against the live API, whenever a fixture needs to be re-recorded:

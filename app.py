@@ -25,7 +25,17 @@ import rules
 from metrics import UnknownMetric
 
 REPOSITORY = "https://github.com/lgelauff/canivote"
-RATE_LIMIT = "60 per minute"
+# Wikimedia's gateway gives a compliant, unauthenticated User-Agent roughly
+# 200 requests a minute. One check costs up to four upstream calls, so the
+# inbound limit is that budget divided by the fan-out, not a round number
+# chosen for looking reasonable. Raise the fan-out and this has to come down.
+# We keep a fifth of it in reserve: sitting exactly on a shared ceiling is not
+# a budget, and other Toolforge tools share the address we call from.
+UPSTREAM_BUDGET_PER_MINUTE = 200
+MAX_UPSTREAM_CALLS_PER_CHECK = 4
+RATE_LIMIT = (
+    f"{int(UPSTREAM_BUDGET_PER_MINUTE * 0.8) // MAX_UPSTREAM_CALLS_PER_CHECK} per minute"
+)
 
 
 
