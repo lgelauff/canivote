@@ -127,6 +127,26 @@ The bigger amplification risk here is crawlers following a `/check?user=…` lin
 ends up on a wiki page, not a single abusive client — a per-IP limit does nothing
 against a distributed crawl.
 
+### Measuring a criterion at an earlier moment
+
+A rule may carry `offset`, which moves the moment that criterion is measured at:
+
+```yaml
+- {metric: edit_count, wiki: en.wikipedia.org, operator: at_least, value: 100,
+   offset: {amount: 3, unit: months}}
+- {metric: edit_count, wiki: en.wikipedia.org, operator: at_least, value: 500}
+```
+
+That pair reads "at least 100 edits three months ago, and 500 now" — a
+sustained-participation rule, which distinguishes a long-standing contributor
+from someone who arrived last week. It is not expressible with `within` alone:
+`within` moves the *start* of a window that still ends now, while `offset` moves
+the *end*.
+
+Offsets are per-criterion, and the gap is fixed by the policy rather than by any
+particular vote. A criterion measured at a shifted moment says so in the
+response, as `"measured": "as of 3 months earlier"`.
+
 ## Adding a policy
 
 Everything a wiki's eligibility rule decomposes into lives in `policies.yaml`, one entry

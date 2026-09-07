@@ -90,10 +90,16 @@ def apply(lookup, rule, moment):
     # without parsing it back out of the English label.
     scope = rule.get("wiki", "global")
 
+    # A policy may anchor one criterion at a different moment from another —
+    # "100 edits three months ago and 500 now" is a sustained-participation
+    # rule, and the gap is fixed by the policy rather than by any one vote.
+    # `within` moves the start of a window ending now; `offset` moves the end.
+    as_of = moment - as_duration(rule["offset"]) if "offset" in rule else moment
+
     threshold = rule["value"]
     parameters = {
         key: value for key, value in rule.items()
-        if key not in ("metric", "operator", "value")
+        if key not in ("metric", "operator", "value", "offset")
     }
     # A trailing window is written the way policies write it ("12 months").
     if "within" in parameters:
@@ -110,7 +116,7 @@ def apply(lookup, rule, moment):
         )
 
     try:
-        seen, label = measure(lookup, rule["metric"], moment, **parameters)
+        seen, label = measure(lookup, rule["metric"], as_of, **parameters)
     except NotMeasurable as gap:
         # Neither pass nor fail: a rule we cannot evaluate must not be scored as
         # though we had, in either direction.
@@ -149,4 +155,6 @@ def apply(lookup, rule, moment):
         "observed": observed,
         "passed": bool(compare(seen, threshold)),
     }
+    if "offset" in rule:
+        result["measured"] = f"as of {describe_span(as_duration(rule['offset']))} earlier"
     return result

@@ -131,7 +131,12 @@ enwiki-arbcom:
   notes: >-
     The real policy fixes calendar dates (1 October, 1 November) that are reset
     for each annual election. They are expressed here as durations before the
-    moment of asking, which stays correct year to year.
+    moment of asking, so that the entry stays correct year to year — but this is
+    an approximation, and it errs towards admitting people. Asked on 15 November,
+    "registered before 1 October" becomes "registered before 16 October", so an
+    account created on 10 October is reported eligible when the policy excludes
+    it. Fixing this properly needs the caller to supply the election's own
+    cutoff date rather than the tool assuming now.
 
 meta-global:
   wiki: meta.wikimedia.org

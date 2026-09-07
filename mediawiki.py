@@ -117,15 +117,17 @@ class Lookup:
         })
         return bool(data.get("query", {}).get("globalblocks"))
 
-    def first_edit(self, wiki):
+    def first_edit(self, wiki, before=None):
         """When the account first edited this wiki, or None if it never has."""
-        key = wiki
+        key = (wiki, before)
         if key not in self._first_edits:
             parameters = {
                 "action": "query", "list": "usercontribs",
                 "ucuser": self.username, "ucdir": "newer",
                 "uclimit": "1", "ucprop": "timestamp",
             }
+            if before:
+                parameters["ucend"] = _timestamp(before)
             edits = self._get(wiki, parameters)["query"]["usercontribs"]
             self._first_edits[key] = (
                 datetime.fromisoformat(edits[0]["timestamp"].replace("Z", "+00:00"))
@@ -133,7 +135,8 @@ class Lookup:
             )
         return self._first_edits[key]
 
-    def count_contributions(self, wiki, *, namespace=None, since=None, cap):
+    def count_contributions(self, wiki, *, namespace=None, since=None,
+                            before=None, cap):
         """Count edits up to `cap`, returning (count, counted_them_all).
 
         Asking for exactly `cap` rows answers a threshold question in one
@@ -148,6 +151,8 @@ class Lookup:
         }
         if namespace is not None:
             parameters["ucnamespace"] = namespace
+        if before:
+            parameters["ucstart"] = _timestamp(before)
         if since:
             parameters["ucend"] = _timestamp(since)
         edits = self._get(wiki, parameters)["query"]["usercontribs"]
