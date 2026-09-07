@@ -21,11 +21,12 @@ nlwiki-stemprocedure:
     hij of zij heeft (minstens) twee weken voor het begin van de stemming zijn
     eerste bewerking gedaan als aangemelde gebruiker; hij of zij had meer dan
     100 bewerkingen (geen vandalisme) gedaan voordat het stemvoorstel in het
-    stemlokaal (of subpagina daarvan) gezet werd.
+    stemlokaal (of subpagina daarvan) gezet werd (ingangstijd/datum van
+    stemvoorstel dient ter referentie).
   english: >-
     You must have made your first edit as a registered user at least two weeks
     before the vote opened, and have made more than 100 edits before the
-    proposal was posted.
+    proposal was posted (the proposal's timestamp is the reference point).
   rules:
     - metric: time_since_first_edit
       wiki: nl.wikipedia.org
@@ -40,8 +41,19 @@ nlwiki-stemprocedure:
       "geen vandalisme" — the 100 edits must not be vandalism. Whether an edit
       is vandalism is a human judgement and is not checked here.
   notes: >-
-    The two clauses use different reference points: the vote opening and the
-    proposal being posted.     between them if a particular vote needs that precision.
+    Article 3 of the Stemprocedure is the general rule. Its two clauses use
+    different reference points — the vote opening for the first edit, the
+    proposal being posted for the edit count — and the gap between them differs
+    per vote, so both are evaluated at the moment of asking. That is slightly
+    more generous than the policy, since edits made after the proposal was
+    posted still count.
+
+    Voting rights, once earned, are held for life ("voor het leven"): nl.wikipedia
+    sets no ongoing-activity requirement, so nothing here expires.
+
+    The second source page records a 2018 proposal to add an activity requirement
+    for person-elections. It was NOT adopted, and is cited only so a reader who
+    finds it knows it does not apply.
 
 dewiki-stimmberechtigung:
   wiki: de.wikipedia.org

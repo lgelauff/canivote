@@ -49,8 +49,12 @@ def _machine(value):
 
     The English rendering is for people; this is so wiki-polis can say "you
     need 43 more edits" and a translator can put it in another language.
-    Durations become whole days, which is the coarsest unit every policy here
-    is written in.
+    Durations become whole days — not seconds, deliberately. `months` is
+    already approximated as 30 days and `years` as 365, so seconds would dress
+    a rounded number in a unit implying an exactness it does not have. Days are
+    as precise as the policy language itself, and are the unit a consumer wants
+    anyway ("you need 43 more days"). The comparison runs on full-precision
+    timedeltas, so this truncation never reaches a verdict.
     """
     if isinstance(value, timedelta):
         return value.days
