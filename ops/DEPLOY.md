@@ -82,8 +82,6 @@ curl -s 'https://canivote.toolforge.org/check?user=Effeietsanders&policy=frwiki-
 
 ## Still to settle on first deploy
 
-The rate limiter keys on `request.remote_addr`, which behind Toolforge's front
-proxy is likely the proxy for every caller — one shared bucket rather than one
-per client. Measure the real hop count on the deployed service, then pin
-`ProxyFix(x_for=N)` to it in `app.py`. Until that is done the limit is a global
-throttle, which is safe for Wikimedia but unfair between callers.
+Some values can only be read off a running deployment, and a couple of them
+describe how the service behaves under load — so they are kept out of this file.
+See `.claude/deploy-notes.md` in a local checkout, which is gitignored.
