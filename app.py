@@ -75,9 +75,19 @@ POLICIES = load_policies(Path(__file__).parent / "policies.yaml")
 app = Flask(__name__)
 app.json.sort_keys = False
 
-# One bucket per client. NOTE: Toolforge runs behind a front proxy, so this is
-# probably the proxy's address for everybody until the real hop count is known
-# and ProxyFix is pinned to it. This function is the single place to fix that.
+# One bucket for the whole tool, deliberately.
+#
+# Toolforge does not pass the client's address down to a tool: measured on the
+# live service, remote_addr is an internal 192.168.x.x and X-Forwarded-For holds
+# a single internal 172.16.x.x — the front proxy, not the caller. There is no
+# client information in the request, so ProxyFix cannot recover one at any
+# value of x_for. Per-client limiting is not achievable here.
+#
+# That is not the gap it looks like. Toolforge itself limits inbound traffic per
+# source IP, so per-caller protection exists a layer above us. What this limit
+# is for is the other thing entirely: keeping our own fan-out to the Wikimedia
+# API inside the budget above, which is a property of the tool as a whole and is
+# measured correctly by a single bucket.
 # headers_enabled is what makes flask-limiter emit Retry-After; without it a
 # well-behaved client has no way to learn how long to back off for.
 limiter = Limiter(lambda: request.remote_addr or "unknown", app=app,

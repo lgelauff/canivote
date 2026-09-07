@@ -109,6 +109,6 @@ curl -s 'https://canivote.toolforge.org/check?user=Effeietsanders&policy=frwiki-
 
 ## Still to settle on first deploy
 
-Some values can only be read off a running deployment, and a couple of them
-describe how the service behaves under load — so they are kept out of this file.
-See `.claude/deploy-notes.md` in a local checkout, which is gitignored.
+Nothing outstanding. The one item that was here — how the rate limiter keys
+callers behind Toolforge's proxy — was measured on the live service and is
+settled; see `.claude/deploy-notes.md` in a local checkout, which is gitignored.
