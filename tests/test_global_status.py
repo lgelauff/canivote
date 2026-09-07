@@ -1,4 +1,4 @@
-"""Locks and global blocks must be detected, not merely not-crash.
+"""Global locks and global blocks must be detected, not merely not-crash.
 
 Both metrics read a positive result from the *presence* of something — a
 `locked` key, a non-empty block list — and for a long time only the negative

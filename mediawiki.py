@@ -110,7 +110,7 @@ class Lookup:
         return self._global
 
     def globally_blocked(self):
-        """Whether stewards have placed a global block on this account."""
+        """Whether a global block applies to this account."""
         data = self._get("meta.wikimedia.org", {
             "action": "query", "list": "globalblocks",
             "bgtargets": self.username, "bglimit": "1",

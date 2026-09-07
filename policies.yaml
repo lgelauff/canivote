@@ -164,7 +164,7 @@ meta-global:
   original_text: >-
     Global locks prevent an account from logging in to any Wikimedia wiki.
   english: >-
-    Your account must not be globally locked or globally blocked by stewards.
+    Your account must not be globally locked or globally blocked.
   rules:
     - metric: is_globally_locked
       operator: is

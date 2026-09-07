@@ -117,12 +117,12 @@ def is_blocked(lookup, as_of, *, wiki):
 
 
 def is_globally_locked(lookup, as_of):
-    """Whether stewards have locked the account across all Wikimedia wikis."""
+    """Whether the account is locked across all Wikimedia wikis."""
     return "locked" in lookup.global_account(), "globally locked"
 
 
 def is_globally_blocked(lookup, as_of):
-    """Whether stewards have globally blocked the account."""
+    """Whether a global block applies to the account."""
     return lookup.globally_blocked(), "globally blocked"
 
 

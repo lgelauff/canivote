@@ -40,7 +40,7 @@ RATE_LIMIT = (
 
 
 # Conditions that hold whoever is asking, because they come from how Wikimedia
-# works rather than from anything a community wrote. A steward's lock stops an
+# works rather than from anything a community wrote. A global lock stops an
 # account editing everywhere; a site-wide block stops it editing here. Neither
 # appears in a policy page, because neither needed saying.
 #
