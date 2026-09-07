@@ -33,7 +33,7 @@ does not work with the running service, and `pip install` from the bastion has
 no effect on it either.
 
 ```bash
-toolforge webservice <image> shell
+toolforge webservice python3.13 shell
 ```
 
 Then, inside that shell — **`python3 -m venv` hangs**, because `ensurepip` does
@@ -55,15 +55,17 @@ not what production installs.
 
 ```bash
 cd ~                     # webservice commands fail if run from inside the repo
-toolforge webservice <image> start
+toolforge webservice python3.13 start --health-check-path /health
 ```
 
-`toolforge webservice --help` lists the valid image types in its `TYPE`
-argument. Use one of those rather than assuming `python3.13`, and make sure
-`pyproject.toml`'s `requires-python` agrees with whichever is chosen.
+`python3.13` is offered (confirmed 2026-09-07 — `toolforge webservice --help`
+lists the supported types; there is no `--list-image-types` flag and no
+`toolforge images list` command). `pyproject.toml` and CI are pinned to match.
 
-(`--list-image-types` is not a flag — `ACTION` is a required positional, so
-`toolforge webservice` on its own just prints usage.)
+`--health-check-path /health` is worth passing. Without it Toolforge only does a
+TCP check, which cannot tell a listening socket from a working service; with it
+the pod is restarted when `/health` stops answering. It requires the endpoint to
+return 200 to any `Host` header, which ours does.
 
 ## Updating
 
@@ -72,7 +74,7 @@ cd ~/canivote && git pull
 # If requirements.txt changed, reinstall inside the webservice shell first —
 # the venv lives outside the repo, so a restart alone will not pick it up and
 # the service comes back up with an ImportError.
-cd ~ && toolforge webservice <image> restart
+cd ~ && toolforge webservice python3.13 restart
 ```
 
 ## Then actually check it

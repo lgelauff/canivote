@@ -7,7 +7,7 @@ license = { file = "LICENSE" }
 # The local dev venv is 3.14; Toolforge's actual image is not yet confirmed
 # (`toolforge webservice --list-image-types` needs a Toolforge bastion to run).
 # Tighten this once that has been checked against what's really offered.
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 dependencies = [
     "flask",
     "flask-limiter",
