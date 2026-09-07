@@ -89,10 +89,6 @@ def test_amount_unit_duration_converts_to_days():
     assert rules.as_duration(5) == timedelta(days=5)  # bare int still means days
 
 
-# --- the cache -----------------------------------------------------------
-
-
-
 def test_normalise_username_collapses_underscores_and_case():
     import mediawiki
     assert mediawiki.normalise_username("foo_bar") == "Foo bar"

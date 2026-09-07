@@ -26,38 +26,71 @@ $ curl 'https://canivote.toolforge.org/check?user=Jimbo Wales&policy=meta-global
   "user": "Jimbo Wales",
   "policy": "meta-global",
   "reason": "Meets every rule that can be checked automatically.",
-  "checked_at": "2026-09-06T15:00:00+00:00",
+  "checked_at": "2026-09-07T12:00:00+00:00",
   "criteria": [
     {
+      "metric": "is_blocked",
+      "label": "not blocked site-wide on Meta-Wiki",
+      "scope": "meta.wikimedia.org",
+      "operator": "is",
+      "required": {
+        "value": false,
+        "display": "not blocked site-wide on Meta-Wiki"
+      },
+      "observed": {
+        "value": false,
+        "display": "not blocked site-wide on Meta-Wiki"
+      },
+      "passed": true,
+      "source": "platform"
+    },
+    {
       "metric": "is_globally_locked",
-      "label": "globally locked",
+      "label": "not globally locked",
       "scope": "global",
       "operator": "is",
-      "required": {"value": false, "display": "not globally locked"},
-      "observed": {"value": false, "display": "not globally locked"},
-      "passed": true
+      "required": {
+        "value": false,
+        "display": "not globally locked"
+      },
+      "observed": {
+        "value": false,
+        "display": "not globally locked"
+      },
+      "passed": true,
+      "source": "policy"
     },
     {
       "metric": "is_globally_blocked",
-      "label": "globally blocked",
+      "label": "not globally blocked",
       "scope": "global",
       "operator": "is",
-      "required": {"value": false, "display": "not globally blocked"},
-      "observed": {"value": false, "display": "not globally blocked"},
-      "passed": true
+      "required": {
+        "value": false,
+        "display": "not globally blocked"
+      },
+      "observed": {
+        "value": false,
+        "display": "not globally blocked"
+      },
+      "passed": true,
+      "source": "policy"
     }
   ],
   "policy_text": {
     "language": "en",
     "original": "Global locks prevent an account from logging in to any Wikimedia wiki.",
     "english": "Your account must not be globally locked or globally blocked.",
-    "sources": ["https://meta.wikimedia.org/wiki/Global_locks",
-               "https://meta.wikimedia.org/wiki/Global_blocks"],
-    "verified": "2026-09-01",
-    "stale": false
+    "sources": [
+      "https://meta.wikimedia.org/wiki/Global_locks",
+      "https://meta.wikimedia.org/wiki/Global_blocks"
+    ],
+    "verified": "2026-09-01"
   },
   "queries": [
-    "https://meta.wikimedia.org/w/api.php?action=query&meta=globaluserinfo&..."
+    "https://meta.wikimedia.org/w/api.php?action=query&list=users&ususers=Jimbo+Wales&usprop=groups%7Cblockinfo%7Cregistration&format=json&formatversion=2&maxlag=5",
+    "https://meta.wikimedia.org/w/api.php?action=query&meta=globaluserinfo&guiuser=Jimbo+Wales&format=json&formatversion=2&maxlag=5",
+    "https://meta.wikimedia.org/w/api.php?action=query&list=globalblocks&bgtargets=Jimbo+Wales&bglimit=1&format=json&formatversion=2&maxlag=5"
   ]
 }
 ```
@@ -69,6 +102,10 @@ Field notes:
   rules whose labels differ ("article-namespace edits on German Wikipedia" and
   "...in the 12 months before that"), because they measure different quantities.
   Switch on `metric`; show `label`.
+- `source` says where a criterion came from: `policy` for something the community
+  wrote, `platform` for a condition Wikimedia imposes whoever is asking (a global
+  lock, a site-wide block). A policy that states one of the platform rules itself
+  keeps its own version, and it is marked `policy`.
 - `scope` is where the measurement applies: a wiki hostname such as
   `de.wikipedia.org`, or `global` for anything CentralAuth answers (locks and
   global blocks). Group by it to say which set of requirements someone fails.
@@ -99,9 +136,9 @@ Field notes:
 
 ### Other endpoints
 
-- `GET /policies` — every policy this tool knows, with its source wording and the rules
-  it decomposes into. Lets you check our reading of a community's own policy without
-  running a single query.
+- `GET /policies` — every policy this tool knows, with a community's own wording and the
+  rules a person wrote from it. Lets you check that translation without running a single
+  query.
 - `GET /health` — for uptime checks.
 - `GET /` — name, repository, and a list of endpoints.
 
@@ -146,10 +183,11 @@ Not everything is modellable: a clause requiring human judgement (e.g. "excludin
 vandalism") should not be silently dropped. List it under that policy's `not_modelled`
 instead, so a verdict never looks more complete than it actually is.
 
-`edit_count` cannot support `at_most` or `fewer_than`: counting stops once a threshold
-is met, so it can only prove "at least N", never "at most N". `load_policies()` refuses
-to start if a policy tries this, at import time, rather than silently returning a wrong
-verdict at request time.
+Every operator works with `edit_count`. Counting stops at a cap, and the cap is widened
+by one row for `more_than`, `at_most` and `is` — enough to distinguish "exactly N" from
+"more than N". What `load_policies()` refuses at import time is a *threshold* the API
+cannot count to: the ceiling is 500 rows, so a policy demanding 600 edits is rejected at
+startup rather than failing every voter at request time while reporting "at least 500".
 
 ## Privacy: the access log
 

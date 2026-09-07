@@ -3,13 +3,15 @@
 Every request is recorded as a full URL and returned with the verdict, so anyone
 can paste it into a browser and see exactly what this tool saw.
 
-Two design notes:
+Three design notes:
 
 * Counting stops at a cap. A policy only asks whether a threshold is met, so one
   request settles it and we never build a fuller picture of somebody than the
   question needs.
-* Results are cached per lookup, so a policy with several rules about one wiki
-  costs one request rather than one per rule.
+* Account and global-account lookups are cached per lookup, so several rules
+  asking about the same account cost one request rather than one per rule.
+  Contribution counts are not cached: two edit-count rules are two different
+  questions, and each needs its own query.
 * One session for the process, and `maxlag` on every call. We are a guest on
   shared infrastructure: reusing the connection and backing off when the
   replicas fall behind are the least we can do.
@@ -21,10 +23,8 @@ from urllib.parse import urlencode
 
 import requests
 
-# Defined here, the lowest module, and imported upwards. The same URL was
-# previously written out in three Python places, one of which was a constant
-# named REPOSITORY that nothing used — so a rename would have left the contact
-# address stale in exactly the field WMF uses to reach an operator.
+# Defined here, the lowest module, and imported upward. It is the contact
+# address in USER_AGENT, which is how WMF reaches an operator.
 REPOSITORY = "https://github.com/lgelauff/canivote"
 
 # The contact URL has to reach a human. A repository has an issue tracker; the

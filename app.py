@@ -35,7 +35,7 @@ from mediawiki import REPOSITORY
 from metrics import UnknownMetric
 
 # Wikimedia's gateway gives a compliant, unauthenticated User-Agent roughly
-# 200 requests a minute. One check costs up to four upstream calls, so the
+# 200 requests a minute. One check costs up to six upstream calls, so the
 # inbound limit is that budget divided by the fan-out, not a round number
 # chosen for looking reasonable. Raise the fan-out and this has to come down.
 # We keep a fifth of it in reserve: sitting exactly on a shared ceiling is not
@@ -158,7 +158,7 @@ def index():
         repository=REPOSITORY,
         endpoints={
             "/check": "?user=<name>&policy=<id>",
-            "/policies": "every policy and the rules it becomes",
+            "/policies": "every policy and the rules a person wrote from it",
             "/health": "uptime check",
         },
     )
