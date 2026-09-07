@@ -1,5 +1,5 @@
 {
-  "https://nl.wikipedia.org/w/api.php?action=query&list=usercontribs&ucuser=ExampleUser&ucdir=newer&uclimit=1&ucprop=timestamp&ucend=2026-09-06T15%3A00%3A00Z&format=json&formatversion=2&maxlag=5": {
+  "https://nl.wikipedia.org/w/api.php?action=query&list=usercontribs&ucuser=ExampleUser&ucdir=newer&uclimit=1&ucprop=timestamp&format=json&formatversion=2&maxlag=5": {
     "batchcomplete": true,
     "continue": {
       "continue": "-||",
@@ -15,7 +15,7 @@
       ]
     }
   },
-  "https://nl.wikipedia.org/w/api.php?action=query&list=usercontribs&ucuser=ExampleUser&uclimit=101&ucprop=ids&ucstart=2026-09-06T15%3A00%3A00Z&format=json&formatversion=2&maxlag=5": {
+  "https://nl.wikipedia.org/w/api.php?action=query&list=usercontribs&ucuser=ExampleUser&uclimit=101&ucprop=ids&format=json&formatversion=2&maxlag=5": {
     "batchcomplete": true,
     "continue": {
       "continue": "-||",

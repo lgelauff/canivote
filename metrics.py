@@ -64,7 +64,7 @@ def time_since_first_edit(lookup, as_of, *, wiki):
     First edit, not account creation: the two differ, and accounts made before
     MediaWiki logged registrations have no creation timestamp at all.
     """
-    first = lookup.first_edit(wiki, before=as_of)
+    first = lookup.first_edit(wiki)
     if first is None:
         raise NotMeasurable(f"no edits on {wiki_name(wiki)}")
     return as_of - first, f"time since first edit on {wiki_name(wiki)}"
@@ -76,8 +76,7 @@ def edit_count(lookup, as_of, *, wiki, namespace="all", within=None, cap=None):
         raise UnknownMetric(f"namespace '{namespace}'")
     counted, exact = lookup.count_contributions(
         wiki, namespace=NAMESPACES[namespace],
-        since=(as_of - within) if within else None,
-        before=as_of, cap=cap or 1,
+        since=(as_of - within) if within else None, cap=cap or 1,
     )
     label = f"edits on {wiki_name(wiki)}"
     if namespace == "article":

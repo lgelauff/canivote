@@ -1,5 +1,5 @@
 {
-  "https://en.wikipedia.org/w/api.php?action=query&list=usercontribs&ucuser=ExampleUser&uclimit=10&ucprop=ids&ucstart=2026-09-06T15%3A00%3A00Z&ucend=2025-09-11T15%3A00%3A00Z&format=json&formatversion=2&maxlag=5": {
+  "https://en.wikipedia.org/w/api.php?action=query&list=usercontribs&ucuser=ExampleUser&uclimit=10&ucprop=ids&ucend=2025-09-11T15%3A00%3A00Z&format=json&formatversion=2&maxlag=5": {
     "batchcomplete": true,
     "continue": {
       "continue": "-||",
@@ -80,7 +80,7 @@
       ]
     }
   },
-  "https://en.wikipedia.org/w/api.php?action=query&list=usercontribs&ucuser=ExampleUser&uclimit=150&ucprop=ids&ucnamespace=0&ucstart=2026-09-06T15%3A00%3A00Z&format=json&formatversion=2&maxlag=5": {
+  "https://en.wikipedia.org/w/api.php?action=query&list=usercontribs&ucuser=ExampleUser&uclimit=150&ucprop=ids&ucnamespace=0&format=json&formatversion=2&maxlag=5": {
     "batchcomplete": true,
     "continue": {
       "continue": "-||",

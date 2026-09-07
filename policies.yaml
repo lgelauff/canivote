@@ -41,8 +41,7 @@ nlwiki-stemprocedure:
       is vandalism is a human judgement and is not checked here.
   notes: >-
     The two clauses use different reference points: the vote opening and the
-    proposal being posted. Set `offset` on the edit-count rule to the gap
-    between them if a particular vote needs that precision.
+    proposal being posted.     between them if a particular vote needs that precision.
 
 dewiki-stimmberechtigung:
   wiki: de.wikipedia.org

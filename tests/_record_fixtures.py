@@ -101,21 +101,6 @@ def record_nonexistent_account():
     print(f"wrote {path} ({len(store)} queries)")
 
 
-def record_offset_rule():
-    """A synthetic edit-count rule with `offset`, to exercise window shifting."""
-    rule = {
-        "metric": "edit_count",
-        "wiki": "nl.wikipedia.org",
-        "operator": "at_least",
-        "value": 1,
-        "offset": {"amount": 30, "unit": "days"},
-    }
-
-    def run(lookup):
-        rules.apply(lookup, rule, FIXED_MOMENT)
-
-    record("offset_rule", run)
-
 
 if __name__ == "__main__":
     FIXTURES_DIR.mkdir(exist_ok=True)
@@ -123,4 +108,3 @@ if __name__ == "__main__":
     for policy_id in policies:
         record_policy(policy_id, policies)
     record_nonexistent_account()
-    record_offset_rule()

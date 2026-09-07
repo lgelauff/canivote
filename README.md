@@ -101,7 +101,6 @@ Field notes:
 - `queries` lists the exact upstream API URLs used to reach the verdict. Anyone can open
   one in a browser and see exactly what this tool saw.
 
-**Compatibility:** fields are added, never removed or retyped.
 
 ### Other endpoints
 
@@ -113,7 +112,7 @@ Field notes:
 
 ## Rate limits
 
-`/check` is limited to 60 requests per minute per client. A request over the limit gets
+`/check` is limited to 60 requests per minute. Behind Toolforge's front proxy this is currently one shared bucket for the whole tool rather than one per client. A request over the limit gets
 `429 Too Many Requests` and makes no upstream call to Wikimedia — the limit is checked
 before anything is asked of the MediaWiki API, not after.
 
@@ -139,10 +138,6 @@ A rule is one metric (see `metrics.py` for what can be measured — edit counts,
 since first edit, block/lock state, user groups, and so on), one operator (`at_least`,
 `more_than`, `at_most`, `fewer_than`, `is`, `includes`, `excludes`), and one value.
 Durations can be a plain integer of days or `{amount: N, unit: days|weeks|months|years}`.
-A rule can shift its measurement moment backwards with `offset`, for policies that
-compare against something other than "right now" (for example, a vote's opening date
-rather than the moment somebody asks).
-
 Not everything is modellable: a clause requiring human judgement (e.g. "excluding
 vandalism") should not be silently dropped. List it under that policy's `not_modelled`
 instead, so a verdict never looks more complete than it actually is.
