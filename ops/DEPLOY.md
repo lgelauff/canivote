@@ -9,7 +9,9 @@ of it is guessable from the code, which is why it is written down.
 ## First time
 
 ```bash
-# The tool account is created at toolsadmin.wikimedia.org, not from the CLI.
+# Tool accounts are created through the web UI at toolsadmin.wikimedia.org.
+# There is no CLI equivalent — `toolforge tools create` is not a command
+# (confirmed 2026-09-07; wiki-polis's own deployment guide is wrong on this).
 become canivote
 git clone https://github.com/lgelauff/canivote.git ~/canivote
 
@@ -56,9 +58,12 @@ cd ~                     # webservice commands fail if run from inside the repo
 toolforge webservice <image> start
 ```
 
-Check `toolforge webservice --list-image-types` for the image name rather than
-assuming `python3.13`; `pyproject.toml`'s `requires-python` should agree with
-whatever is actually offered.
+`toolforge webservice --help` lists the valid image types in its `TYPE`
+argument. Use one of those rather than assuming `python3.13`, and make sure
+`pyproject.toml`'s `requires-python` agrees with whichever is chosen.
+
+(`--list-image-types` is not a flag — `ACTION` is a required positional, so
+`toolforge webservice` on its own just prints usage.)
 
 ## Updating
 
