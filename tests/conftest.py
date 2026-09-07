@@ -82,9 +82,9 @@ def client():
 def _isolated_app_state(monkeypatch):
     """Freeze the clock and reset the two pieces of module-level state.
 
-    `_cache` and the rate limiter both live for the life of the process, not
+    The rate limiter lives for the life of the process, not
     the life of a request, so without this a test earlier in the file would
-    leak a cached verdict — or consumed rate-limit quota — into a later one.
+    leak consumed rate-limit quota into a later one.
     """
 
     class _FrozenDatetime(datetime):
@@ -93,8 +93,6 @@ def _isolated_app_state(monkeypatch):
             return FIXED_MOMENT
 
     monkeypatch.setattr(app_module, "datetime", _FrozenDatetime)
-    app_module._cache.clear()
     app_module.limiter.reset()
     yield
-    app_module._cache.clear()
     app_module.limiter.reset()

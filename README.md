@@ -16,21 +16,17 @@ that project's operational patterns.
 GET /check?user=<name>&policy=<policy id>
 ```
 
-`event` is also accepted as an alias for `policy` (an existing client sends that name).
-
 ```
 $ curl 'https://canivote.toolforge.org/check?user=Jimbo Wales&policy=meta-global'
 ```
 
 ```json
 {
-  "eligible": true,
   "verdict": "eligible",
   "user": "Jimbo Wales",
   "policy": "meta-global",
   "reason": "Meets every rule that can be checked automatically.",
   "checked_at": "2026-09-06T15:00:00+00:00",
-  "cached": false,
   "criteria": [
     {
       "metric": "is_globally_locked",
@@ -79,11 +75,10 @@ Field notes:
 - `observed.bounded` appears only on counts. It means counting stopped once the
   threshold was met, so the real number is that or higher — we do not look further
   than the question needs.
-- `eligible` is a plain boolean, kept for clients that already read it.
-- `verdict` is `"eligible"`, `"not_eligible"`, or `"indeterminate"` — the tri-state
-  `eligible` alone cannot express. A rule that could not be checked (see `passed: null`
-  below) is not the same as a rule that failed; collapsing them into one `false` would
-  discard information the design exists to keep.
+- `verdict` is `"eligible"`, `"not_eligible"`, or `"indeterminate"`. A rule that could
+  not be checked (see `passed: null` below) is not the same as a rule that failed, and
+  a single boolean cannot say so — collapsing them would discard the one distinction
+  this design exists to keep.
 - Each entry in `criteria` has `passed: true`, `passed: false`, or `passed: null`.
   `null` means the rule is unmeasurable for this account (for example, an account old
   enough to predate MediaWiki's registration logging) — it is scored as neither a pass
@@ -96,12 +91,11 @@ Field notes:
   `display` string, so a consumer can compute ("you need 43 more edits"), localise, or
   chart, without having to parse English prose back into numbers.
 - `policy_text.verified` is the date the policy's source pages were last read by a
-  human, and `stale` is `true` once that is more than about a year old — a signal that
-  the wording here may no longer match what the wiki actually says.
+  human. If that was a long time ago, the wording here may no longer match what the
+  wiki actually says — the sources are listed so you can check.
 - `queries` lists the exact upstream API URLs used to reach the verdict. Anyone can open
   one in a browser and see exactly what this tool saw.
 
-**Compatibility:** fields are added, never removed or retyped.
 
 ### Other endpoints
 
@@ -113,20 +107,15 @@ Field notes:
 
 ## Rate limits
 
-`/check` is limited to 60 requests per minute per client. A request over the limit gets
-`429 Too Many Requests` and makes no upstream call to Wikimedia — the limit is checked
-before anything is asked of the MediaWiki API, not after.
+`/check` is rate limited. A request over the limit gets
+`429 Too Many Requests` with a `Retry-After` header, and makes no upstream call to
+Wikimedia — the limit is checked before anything is asked of the MediaWiki API, not
+after.
 
-Identical `user` + `policy` checks are also cached for up to 60 seconds (`cached: true`
-on a cache hit, with the original `checked_at`). This is a courtesy against accidental
-repeats, not a defence against a deliberate client — 60 seconds is a bound, not a
-guarantee of freshness. Block and lock state in particular can change at any moment; a
-steward acting mid-consultation is exactly the case those rules exist for.
+The ceiling is set from what Wikimedia's API allows a well-behaved anonymous client,
+divided by the number of calls one check costs. If you need a higher allowance for a
+legitimate use, open an issue rather than working around it.
 
-`/check` is disallowed in `robots.txt` and sent with `X-Robots-Tag: noindex, nofollow`.
-The bigger amplification risk here is crawlers following a `/check?user=…` link that
-ends up on a wiki page, not a single abusive client — a per-IP limit does nothing
-against a distributed crawl.
 
 ## Adding a policy
 
@@ -139,10 +128,6 @@ A rule is one metric (see `metrics.py` for what can be measured — edit counts,
 since first edit, block/lock state, user groups, and so on), one operator (`at_least`,
 `more_than`, `at_most`, `fewer_than`, `is`, `includes`, `excludes`), and one value.
 Durations can be a plain integer of days or `{amount: N, unit: days|weeks|months|years}`.
-A rule can shift its measurement moment backwards with `offset`, for policies that
-compare against something other than "right now" (for example, a vote's opening date
-rather than the moment somebody asks).
-
 Not everything is modellable: a clause requiring human judgement (e.g. "excluding
 vandalism") should not be silently dropped. List it under that policy's `not_modelled`
 instead, so a verdict never looks more complete than it actually is.

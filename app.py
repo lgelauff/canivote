@@ -13,8 +13,7 @@ several outbound ones, from an IP shared with every other Toolforge tool, so
 this file is as careful about what it sends upstream as about what it answers.
 """
 
-from collections import OrderedDict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
@@ -26,62 +25,47 @@ import rules
 from metrics import UnknownMetric
 
 REPOSITORY = "https://github.com/lgelauff/canivote"
-RATE_LIMIT = "60 per minute"
-CACHE_SECONDS = 60
-CACHE_MAX_ENTRIES = 512
-STALE_AFTER_DAYS = 365
-
-# Counting stops once a threshold is met, so we can only ever prove "at least
-# N". An "at most" rule would compare against a number we deliberately stopped
-# short of and pass an account with far more edits than it allows.
-CAPPED_METRICS = {"edit_count"}
-UNSAFE_WITH_CAPPING = {"at_most", "fewer_than"}
-
-REQUIRED_POLICY_FIELDS = (
-    "wiki", "language", "sources", "verified", "original_text", "english", "rules",
+# Wikimedia's gateway gives a compliant, unauthenticated User-Agent roughly
+# 200 requests a minute. One check costs up to four upstream calls, so the
+# inbound limit is that budget divided by the fan-out, not a round number
+# chosen for looking reasonable. Raise the fan-out and this has to come down.
+# We keep a fifth of it in reserve: sitting exactly on a shared ceiling is not
+# a budget, and other Toolforge tools share the address we call from.
+UPSTREAM_BUDGET_PER_MINUTE = 200
+MAX_UPSTREAM_CALLS_PER_CHECK = 4
+RATE_LIMIT = (
+    f"{int(UPSTREAM_BUDGET_PER_MINUTE * 0.8) // MAX_UPSTREAM_CALLS_PER_CHECK} per minute"
 )
-REQUIRED_RULE_FIELDS = ("metric", "operator", "value")
+
 
 
 def load_policies(path):
     """Read the policy file, refusing to start on a rule we cannot answer.
 
     A wrong verdict is worse than no service, and policies.yaml is meant to be
-    a file someone can safely edit — so the check belongs here, at startup,
-    where it is loud, rather than in the request path where it is not.
+    a file a non-programmer edits by diff — so what cannot be answered honestly
+    is refused here, at startup, where it is loud.
     """
     policies = yaml.safe_load(Path(path).read_text())
     for policy_id, policy in policies.items():
-        def wrong(problem):
-            return ValueError(f"policy '{policy_id}': {problem}")
-
-        missing = [f for f in REQUIRED_POLICY_FIELDS if not policy.get(f) and f != "rules"]
-        if missing or "rules" not in policy:
-            raise wrong(f"missing {', '.join(missing or ['rules'])}")
-
-        # A verdict is only as good as the wording it claims to implement, so a
-        # source has to be somewhere a reader can actually go and check.
         for source in policy["sources"]:
+            # A verdict is only as good as the wording it claims to implement,
+            # so a source has to be somewhere a reader can actually go.
             if not str(source).startswith(("https://", "http://")):
-                raise wrong(f"source {source!r} is not a URL")
-
-        # `verified` drives the staleness flag; an unparseable one would make
-        # every verdict silently claim to be freshly checked.
-        try:
-            datetime.fromisoformat(str(policy["verified"]))
-        except (TypeError, ValueError):
-            raise wrong(f"verified {policy['verified']!r} is not a date") from None
-
+                raise ValueError(f"policy '{policy_id}': source {source!r} is not a URL")
         for rule in policy["rules"]:
-            absent = [f for f in REQUIRED_RULE_FIELDS if f not in rule]
-            if absent:
-                raise wrong(f"a rule is missing {', '.join(absent)}")
-            if (rule["metric"] in CAPPED_METRICS
-                    and rule["operator"] in UNSAFE_WITH_CAPPING):
+            if rule["metric"] != "edit_count":
+                continue
+            # We settle a count by asking for one row per edit up to the
+            # threshold, and the API will not return more than 500. Above that
+            # we would compare against a number we never finished counting and
+            # fail every voter while reporting "at least 500".
+            needed = rule["value"] + (1 if rule["operator"] in rules.NEEDS_ONE_MORE_THAN_THRESHOLD else 0)
+            if needed > mediawiki.MAX_ROWS_PER_REQUEST:
                 raise ValueError(
-                    f"policy '{policy_id}' uses '{rule['operator']}' on "
-                    f"'{rule['metric']}', which counting-to-a-cap cannot answer "
-                    f"correctly. Use a different metric or operator."
+                    f"policy '{policy_id}': a threshold of {rule['value']} needs "
+                    f"{needed} rows, past the API's {mediawiki.MAX_ROWS_PER_REQUEST}. "
+                    f"Counting that far needs a different data source."
                 )
     return policies
 
@@ -91,16 +75,24 @@ POLICIES = load_policies(Path(__file__).parent / "policies.yaml")
 app = Flask(__name__)
 app.json.sort_keys = False
 
-# One bucket per client. NOTE: Toolforge runs behind a front proxy, so this is
-# probably the proxy's address for everybody until the real hop count is known
-# and ProxyFix is pinned to it. This function is the single place to fix that.
+# One bucket for the whole tool, deliberately.
+#
+# Toolforge does not pass the client's address down to a tool: measured on the
+# live service, remote_addr is an internal 192.168.x.x and X-Forwarded-For holds
+# a single internal 172.16.x.x — the front proxy, not the caller. There is no
+# client information in the request, so ProxyFix cannot recover one at any
+# value of x_for. Per-client limiting is not achievable here.
+#
+# That is not the gap it looks like. Toolforge itself limits inbound traffic per
+# source IP, so per-caller protection exists a layer above us. What this limit
+# is for is the other thing entirely: keeping our own fan-out to the Wikimedia
+# API inside the budget above, which is a property of the tool as a whole and is
+# measured correctly by a single bucket.
 # headers_enabled is what makes flask-limiter emit Retry-After; without it a
 # well-behaved client has no way to learn how long to back off for.
 limiter = Limiter(lambda: request.remote_addr or "unknown", app=app,
                   default_limits=[], storage_uri="memory://",
                   headers_enabled=True)
-
-_cache = OrderedDict()
 
 
 @app.after_request
@@ -156,8 +148,7 @@ def policies():
 def check():
     """Check one user against one policy."""
     raw_user = request.args.get("user") or ""
-    # 'event' is accepted because wiki-polis's existing client sends that name.
-    policy_id = (request.args.get("policy") or request.args.get("event") or "").strip()
+    policy_id = (request.args.get("policy") or "").strip()
 
     if not raw_user.strip() or not policy_id:
         return jsonify(error="Provide both 'user' and 'policy'."), 400
@@ -171,10 +162,6 @@ def check():
         username = mediawiki.normalise_username(raw_user)
     except mediawiki.UsernameInvalid:
         return jsonify(error="That is not a valid username."), 400
-
-    cached = _from_cache(username, policy_id)
-    if cached is not None:
-        return jsonify(cached)
 
     policy = POLICIES[policy_id]
     moment = datetime.now(timezone.utc)
@@ -215,34 +202,28 @@ def check():
 
     body = _verdict(username, policy_id, policy, applied, lookup, moment,
                     verdict=verdict, reason=reason)
-    _remember(username, policy_id, body)
     return jsonify(body)
 
 
 def _verdict(username, policy_id, policy, applied, lookup, moment, *, verdict, reason):
     """Assemble the response. Order matters: verdict first, evidence after."""
-    verified = policy.get("verified")
     body = {
-        # `eligible` stays for clients that already read it; `verdict` carries
-        # the distinction it cannot — a rule we could not check is not the same
-        # as a rule that failed, and collapsing them loses the honest answer.
-        "eligible": verdict == "eligible",
         "verdict": verdict,
         "user": username,
         "policy": policy_id,
         "reason": reason,
         "checked_at": moment.isoformat(timespec="seconds"),
-        "cached": False,
         "criteria": applied,
         "policy_text": {
             "language": policy["language"],
             "original": policy["original_text"],
             "english": policy["english"],
             "sources": policy["sources"],
-            # When we last read the policy page, and whether that was long
-            # enough ago that a reader should go and check it themselves.
-            "verified": verified,
-            "stale": _is_stale(verified),
+            # When we last read the policy page. How old is too old is the
+            # reader's call, not ours.
+            # str(), because YAML reads an unquoted 2026-09-01 as a date object
+            # and Flask would render that as "Tue, 01 Sep 2026 00:00:00 GMT".
+            "verified": str(policy.get("verified", "")),
         },
         "queries": lookup.queries,
     }
@@ -253,39 +234,8 @@ def _verdict(username, policy_id, policy, applied, lookup, moment, *, verdict, r
     return body
 
 
-def _is_stale(verified):
-    """Has nobody checked this community's policy page for a year?"""
-    if not verified:
-        return True
-    checked = datetime.fromisoformat(str(verified)).replace(tzinfo=timezone.utc)
-    return datetime.now(timezone.utc) - checked > timedelta(days=STALE_AFTER_DAYS)
 
 
-def _from_cache(username, policy_id):
-    """A recent identical answer, or None.
-
-    Deliberately short-lived. Most of a verdict changes slowly, but block and
-    lock status does not: a steward acting mid-consultation is precisely the
-    case those rules exist for, and a stale 'eligible' would defeat them.
-    """
-    entry = _cache.get((username, policy_id))
-    if entry is None:
-        return None
-    stored_at, body = entry
-    if (datetime.now(timezone.utc) - stored_at).total_seconds() > CACHE_SECONDS:
-        del _cache[(username, policy_id)]
-        return None
-    _cache.move_to_end((username, policy_id))
-    # Say the answer is reused and when it was actually reached, rather than
-    # claiming a freshness it does not have.
-    return {**body, "cached": True}
-
-
-def _remember(username, policy_id, body):
-    _cache[(username, policy_id)] = (datetime.now(timezone.utc), body)
-    _cache.move_to_end((username, policy_id))
-    while len(_cache) > CACHE_MAX_ENTRIES:
-        _cache.popitem(last=False)
 
 
 if __name__ == "__main__":

@@ -4,10 +4,6 @@ A rule is a mathematical statement about a measured quantity, and nothing more.
 It carries no wiki-specific knowledge — that lives in metrics.py — and no
 judgement about what a community meant, which lives in the policy's own words.
 
-A rule may shift the moment it is measured at. Dutch Wikipedia asks for edits
-made before the vote was proposed but for a first edit two weeks before the
-vote opened; `offset` expresses that difference without inventing a taxonomy of
-reference points.
 """
 
 from datetime import timedelta
@@ -20,6 +16,11 @@ UNITS = {
     "months": 30,   # policies say "two months"; nobody means 61 days exactly
     "years": 365,
 }
+
+# Counting stops at a cap, so a comparison is only answerable if the cap is set
+# high enough to distinguish the cases either side of it. "At least 200" needs
+# 200 rows; "exactly 200" needs 201, because 200 rows cannot tell 200 from 900.
+NEEDS_ONE_MORE_THAN_THRESHOLD = {"more_than", "at_most", "is"}
 
 OPERATORS = {
     "at_least": (lambda seen, want: seen >= want, "at least"),
@@ -89,7 +90,12 @@ def apply(lookup, rule, moment):
     # without parsing it back out of the English label.
     scope = rule.get("wiki", "global")
 
+    # A policy may anchor one criterion at a different moment from another —
+    # "100 edits three months ago and 500 now" is a sustained-participation
+    # rule, and the gap is fixed by the policy rather than by any one vote.
+    # `within` moves the start of a window ending now; `offset` moves the end.
     as_of = moment - as_duration(rule["offset"]) if "offset" in rule else moment
+
     threshold = rule["value"]
     parameters = {
         key: value for key, value in rule.items()
@@ -105,7 +111,9 @@ def apply(lookup, rule, moment):
         threshold = as_duration(threshold)
     # A count threshold doubles as the cap, so counting can stop once it is met.
     if rule["metric"] == "edit_count":
-        parameters["cap"] = threshold + (1 if rule["operator"] == "more_than" else 0)
+        parameters["cap"] = threshold + (
+            1 if rule["operator"] in NEEDS_ONE_MORE_THAN_THRESHOLD else 0
+        )
 
     try:
         seen, label = measure(lookup, rule["metric"], as_of, **parameters)
@@ -148,5 +156,5 @@ def apply(lookup, rule, moment):
         "passed": bool(compare(seen, threshold)),
     }
     if "offset" in rule:
-        result["measured"] = f"{describe_span(as_duration(rule['offset']))} earlier"
+        result["measured"] = f"as of {describe_span(as_duration(rule['offset']))} earlier"
     return result

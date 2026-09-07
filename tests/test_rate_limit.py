@@ -1,9 +1,6 @@
 """The 429 path must never reach Wikimedia.
 
-Repeating the same user+policy means every response after the first is served
-from the 60s cache — so this also exercises the limiter counting *cached*
-responses toward the bucket, not just fresh ones, while proving the thing that
-actually matters: a client that gets rate-limited costs Wikimedia nothing.
+A client that gets rate-limited must cost Wikimedia nothing.
 """
 
 from tests.conftest import use_fixture
@@ -32,6 +29,7 @@ def test_429_makes_no_upstream_call_and_sends_retry_after(client, monkeypatch):
     assert "Retry-After" in first_429.headers
     assert int(first_429.headers["Retry-After"]) > 0
 
-    # Every 200 after the first was a cache hit; the 429s made no request at
-    # all. Either way, exactly one real upstream call for the whole run.
-    assert len(calls) == 1
+    # The point of the test: every allowed request cost one upstream call, and
+    # the refused ones cost none. A limiter that calls Wikimedia before saying
+    # no has not solved the amplification problem it exists for.
+    assert len(calls) == limit
