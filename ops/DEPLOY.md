@@ -36,15 +36,35 @@ no effect on it either.
 toolforge webservice python3.13 shell
 ```
 
-Then, inside that shell — **`python3 -m venv` hangs**, because `ensurepip` does
-not work in the pod. Build it without pip and fetch pip separately:
+**Wait for the pod's prompt before typing anything else.** It changes from
+`tools.canivote@tools-bastion-NN` to `tools.canivote@shell-NNNNNNNNNN`. Pasting
+a block that begins with this command loses the lines after it — they arrive
+while the pod is still starting and are swallowed.
+
+Then, inside that shell, one command at a time. **`python3 -m venv` on its own
+hangs**, because `ensurepip` does not work in the pod, so build it without pip
+and fetch pip separately:
 
 ```bash
 python3 -m venv --without-pip ~/www/python/venv
+```
+```bash
 curl -sS https://bootstrap.pypa.io/get-pip.py | ~/www/python/venv/bin/python3
+```
+```bash
 ~/www/python/venv/bin/pip install -r ~/canivote/requirements.txt
+```
+
+Check it worked, then leave:
+
+```bash
+ls ~/www/python/venv/bin/    # expect pip, python3, flask
 exit
 ```
+
+**The `toolforge` CLI does not exist inside the webservice shell.** If a
+`toolforge` command returns `command not found`, that is the symptom of still
+being in the pod — `exit` first.
 
 `requirements.txt` is the production install path — a `pip freeze` of a working
 environment, so the whole dependency graph is pinned, not just the four
