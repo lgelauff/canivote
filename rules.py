@@ -139,6 +139,13 @@ def apply(lookup, rule, moment):
         return _readable(value)
 
     observed = {"value": _machine(seen), "display": shown(seen)}
+    required_display = shown(threshold)
+    # A criterion is a requirement, not a property. Naming a boolean rule after
+    # the thing looked for reads backwards — "globally locked ... passed" makes
+    # a reader invert it. Name it after what must hold. Computed after the
+    # displays above, which are built from the property name.
+    if isinstance(threshold, bool):
+        label = required_display
     # `bounded` only means something for a count we deliberately stopped taking.
     # On a boolean or a duration it is noise that reads like a missing feature.
     if isinstance(seen, int) and not isinstance(seen, bool):
@@ -151,7 +158,7 @@ def apply(lookup, rule, moment):
         "label": label,
         "scope": scope,
         "operator": phrase,
-        "required": {"value": _machine(threshold), "display": shown(threshold)},
+        "required": {"value": _machine(threshold), "display": required_display},
         "observed": observed,
         "passed": bool(compare(seen, threshold)),
     }

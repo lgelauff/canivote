@@ -15,5 +15,22 @@
         }
       ]
     }
+  },
+  "https://meta.wikimedia.org/w/api.php?action=query&list=globalblocks&bgtargets=ExampleUser&bglimit=1&format=json&formatversion=2&maxlag=5": {
+    "batchcomplete": true,
+    "query": {
+      "globalblocks": []
+    }
+  },
+  "https://meta.wikimedia.org/w/api.php?action=query&meta=globaluserinfo&guiuser=ExampleUser&format=json&formatversion=2&maxlag=5": {
+    "batchcomplete": true,
+    "query": {
+      "globaluserinfo": {
+        "home": "nlwiki",
+        "id": 409,
+        "name": "ExampleUser",
+        "registration": "2008-03-25T14:47:49Z"
+      }
+    }
   }
 }

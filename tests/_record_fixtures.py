@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import mediawiki  # noqa: E402
 import rules  # noqa: E402
+from app import baseline_rules  # noqa: E402
 import yaml  # noqa: E402
 
 REAL_USER = "Effeietsanders"
@@ -78,7 +79,10 @@ def record_policy(policy_id, policies):
     def run(lookup):
         policy = policies[policy_id]
         lookup.account(policy["wiki"])
-        for rule in policy["rules"]:
+        # The same assembly /check uses, baseline included — recording only the
+        # policy's own rules would miss the platform ones and leave the fixtures
+        # unable to answer half of what a real request asks.
+        for rule in baseline_rules(policy) + policy["rules"]:
             rules.apply(lookup, rule, FIXED_MOMENT)
 
     record(policy_id, run)

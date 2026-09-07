@@ -32,11 +32,39 @@ REPOSITORY = "https://github.com/lgelauff/canivote"
 # We keep a fifth of it in reserve: sitting exactly on a shared ceiling is not
 # a budget, and other Toolforge tools share the address we call from.
 UPSTREAM_BUDGET_PER_MINUTE = 200
-MAX_UPSTREAM_CALLS_PER_CHECK = 4
+MAX_UPSTREAM_CALLS_PER_CHECK = 6   # measured: dewiki + the platform baseline
 RATE_LIMIT = (
     f"{int(UPSTREAM_BUDGET_PER_MINUTE * 0.8) // MAX_UPSTREAM_CALLS_PER_CHECK} per minute"
 )
 
+
+
+# Conditions that hold whoever is asking, because they come from how Wikimedia
+# works rather than from anything a community wrote. A steward's lock stops an
+# account editing everywhere; a site-wide block stops it editing here. Neither
+# appears in a policy page, because neither needed saying.
+#
+# They are applied to every policy unless it opts out with `baseline: false`,
+# and they are marked `source: platform` in the response so a reader can tell
+# what the community asked for from what the software imposes.
+GLOBAL_BASELINE = (
+    {"metric": "is_globally_locked", "operator": "is", "value": False},
+    {"metric": "is_globally_blocked", "operator": "is", "value": False},
+)
+
+
+def baseline_rules(policy):
+    """The implied rules for a policy: global always, local when scoped to a wiki."""
+    if policy.get("baseline") is False:
+        return []
+    rules = [dict(rule) for rule in GLOBAL_BASELINE]
+    if policy.get("wiki"):
+        rules.append({"metric": "is_blocked", "wiki": policy["wiki"],
+                      "operator": "is", "value": False})
+    # A policy that states one of these itself keeps its own version, so the
+    # community's wording stays the authority and nothing is checked twice.
+    stated = {rule["metric"] for rule in policy["rules"]}
+    return [rule for rule in rules if rule["metric"] not in stated]
 
 
 def load_policies(path):
@@ -172,7 +200,11 @@ def check():
         # queries answer "no edits" for a nonexistent account just as they do
         # for a new one, so without this a typo would read as a failed vote.
         lookup.account(policy["wiki"])
-        applied = [rules.apply(lookup, rule, moment) for rule in policy["rules"]]
+        implied = baseline_rules(policy)
+        applied = [{**rules.apply(lookup, rule, moment), "source": "platform"}
+                   for rule in implied]
+        applied += [{**rules.apply(lookup, rule, moment), "source": "policy"}
+                    for rule in policy["rules"]]
     except mediawiki.UsernameInvalid:
         return jsonify(_verdict(username, policy_id, policy, [], lookup, moment,
                                 verdict="not_eligible",
