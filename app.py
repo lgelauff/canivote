@@ -1,12 +1,21 @@
 """canivote — does this person meet a wiki's voting-eligibility policy?
 
   /check?user=&policy=   the verdict, the rules behind it, and the queries used
-  /policies              every policy, its own wording, and what it decomposes to
+  /policies              every policy: a community's own wording, and the rules
+                         a person wrote from it
   /health                for uptime checks
   /                      what this is and where to report problems
 
 No login and no accounts. Everything it reads is public, and every verdict comes
 with the API queries that produced it, so anyone can reproduce it by hand.
+
+This tool does not read policy pages and does not interpret prose. A person
+reads the community's page and writes the machine-readable rules; the tool only
+executes those. The original wording and its sources travel with every verdict
+so a reader can audit that person's translation — they are evidence for the
+reader, never input to the program. Nothing here should ever infer a rule from
+text, because then nobody could tell whether a verdict reflects the community's
+rule or the tool's reading of it.
 
 We are a guest on Wikimedia's infrastructure. One inbound request can cost them
 several outbound ones, from an IP shared with every other Toolforge tool, so
@@ -22,9 +31,9 @@ from flask_limiter import Limiter
 
 import mediawiki
 import rules
+from mediawiki import REPOSITORY
 from metrics import UnknownMetric
 
-REPOSITORY = "https://github.com/lgelauff/canivote"
 # Wikimedia's gateway gives a compliant, unauthenticated User-Agent roughly
 # 200 requests a minute. One check costs up to four upstream calls, so the
 # inbound limit is that budget divided by the fan-out, not a round number
@@ -251,8 +260,8 @@ def _verdict(username, policy_id, policy, applied, lookup, moment, *, verdict, r
             "original": policy["original_text"],
             "english": policy["english"],
             "sources": policy["sources"],
-            # When we last read the policy page. How old is too old is the
-            # reader's call, not ours.
+            # When a person last read the policy page. How old is too old is
+            # the reader's call, not ours.
             # str(), because YAML reads an unquoted 2026-09-01 as a date object
             # and Flask would render that as "Tue, 01 Sep 2026 00:00:00 GMT".
             "verified": str(policy.get("verified", "")),

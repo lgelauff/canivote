@@ -21,12 +21,15 @@ from urllib.parse import urlencode
 
 import requests
 
+# Defined here, the lowest module, and imported upwards. The same URL was
+# previously written out in three Python places, one of which was a constant
+# named REPOSITORY that nothing used — so a rename would have left the contact
+# address stale in exactly the field WMF uses to reach an operator.
+REPOSITORY = "https://github.com/lgelauff/canivote"
+
 # The contact URL has to reach a human. A repository has an issue tracker; the
 # tool's own front page would not, since it does not have one.
-USER_AGENT = (
-    "canivote/1.0 (https://github.com/lgelauff/canivote; "
-    "Wikimedia eligibility checker)"
-)
+USER_AGENT = f"canivote/1.0 ({REPOSITORY}; Wikimedia eligibility checker)"
 TIMEOUT_SECONDS = 10
 MAX_ROWS_PER_REQUEST = 500  # Action API ceiling for clients without apihighlimits
 MAX_LAG_SECONDS = 5         # standard Wikimedia etiquette: back off when replicas lag

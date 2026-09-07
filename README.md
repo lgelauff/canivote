@@ -105,6 +105,20 @@ Field notes:
 - `GET /health` — for uptime checks.
 - `GET /` — name, repository, and a list of endpoints.
 
+## What this tool does not do
+
+It does not read policy pages, and it does not interpret prose. A person reads a
+community's page and writes the machine-readable rules; the tool only executes
+them. `original_text` and `sources` travel with every verdict so a reader can
+audit that person's translation — they are evidence for the reader, never input
+to the program.
+
+That boundary is deliberate. A tool that inferred rules from wikitext would
+leave nobody able to tell whether a verdict reflected the community's rule or
+the tool's reading of it, which is the one thing this design exists to avoid.
+Clauses that cannot be mechanised are carried as text under `not_checked`
+rather than approximated.
+
 ## Rate limits
 
 `/check` is rate limited. A request over the limit gets
