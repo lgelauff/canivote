@@ -1,18 +1,29 @@
 """canivote — does this person meet a wiki's voting-eligibility policy?
 
   /check?user=&policy=   the verdict, the rules behind it, and the queries used
-  /policies              every policy, its own wording, and what it decomposes to
+  /policies              what there is to choose from; ?wiki= narrows it
+  /policies/<id>         one policy in full, and the rules it becomes
   /health                for uptime checks
   /                      what this is and where to report problems
 
 No login and no accounts. Everything it reads is public, and every verdict comes
 with the API queries that produced it, so anyone can reproduce it by hand.
 
+This tool does not read policy pages and does not interpret prose. A person
+reads the community's page and writes the machine-readable rules; the tool only
+executes those. The original wording and its sources travel with every verdict
+so a reader can audit that person's translation — they are evidence for the
+reader, never input to the program. Nothing here should ever infer a rule from
+text, because then nobody could tell whether a verdict reflects the community's
+rule or the tool's reading of it.
+
 We are a guest on Wikimedia's infrastructure. One inbound request can cost them
 several outbound ones, from an IP shared with every other Toolforge tool, so
 this file is as careful about what it sends upstream as about what it answers.
 """
 
+import inspect
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,26 +32,95 @@ from flask import Flask, jsonify, request
 from flask_limiter import Limiter
 
 import mediawiki
+import metrics
 import rules
+from mediawiki import REPOSITORY
 from metrics import UnknownMetric
 
-REPOSITORY = "https://github.com/lgelauff/canivote"
 # Wikimedia's gateway gives a compliant, unauthenticated User-Agent roughly
-# 200 requests a minute. One check costs up to four upstream calls, so the
+# 200 requests a minute. One check costs up to six upstream calls, so the
 # inbound limit is that budget divided by the fan-out, not a round number
 # chosen for looking reasonable. Raise the fan-out and this has to come down.
 # We keep a fifth of it in reserve: sitting exactly on a shared ceiling is not
 # a budget, and other Toolforge tools share the address we call from.
 UPSTREAM_BUDGET_PER_MINUTE = 200
-MAX_UPSTREAM_CALLS_PER_CHECK = 4
+MAX_UPSTREAM_CALLS_PER_CHECK = 6   # measured: dewiki + the platform baseline
 RATE_LIMIT = (
     f"{int(UPSTREAM_BUDGET_PER_MINUTE * 0.8) // MAX_UPSTREAM_CALLS_PER_CHECK} per minute"
 )
 
 
 
+# Conditions that hold whoever is asking, because they come from how Wikimedia
+# works rather than from anything a community wrote — a global lock stops an
+# account editing anywhere at all. Neither
+# appears in a policy page, because neither needed saying.
+#
+# They are applied to every policy unless it opts out with `baseline: false`,
+# and they are marked `source: platform` in the response so a reader can tell
+# what the community asked for from what the software imposes.
+GLOBAL_BASELINE = (
+    {"metric": "has_global_account", "operator": "is", "value": True},
+    {"metric": "is_globally_locked", "operator": "is", "value": False},
+    {"metric": "is_globally_blocked", "operator": "is", "value": False},
+)
+
+
+def baseline_rules(policy):
+    """The rules the software imposes on every check, whatever a policy says.
+
+    Only conditions that hold movement-wide belong here. A *local* block is one
+    community's sanction under its own blocking policy, and whether it also
+    removes a vote is that community's decision to write down — some say it
+    does, and WMF Board elections disqualify only an account blocked on more
+    than one project. Adding it here would impose one community's sanction on
+    policies that never asked for it.
+    """
+    if policy.get("baseline") is False:
+        return []
+    # No attempt to suppress a rule a policy also states. Rules are ANDed and
+    # lookups are memoised, so a repeat costs no upstream request and cannot
+    # change a verdict — the only thing deduplication bought was a shorter
+    # list, and it bought that at the price of deciding when two rules are
+    # "the same", which is where it went wrong. If a community states a
+    # condition the software also imposes, the response shows both, one marked
+    # `policy` and one `platform`, which is the more honest reading anyway.
+    return [dict(rule) for rule in GLOBAL_BASELINE]
+
+
+def _parse_moment(text):
+    """Parse an ISO 8601 timestamp from a query string.
+
+    A `+` in a query string decodes to a space, so `...T00:00:00+02:00` arrives
+    as `...T00:00:00 02:00` and will not parse. Rather than tell a caller their
+    valid timestamp is invalid, restore the sign — but only on a trailing
+    offset, since ISO also allows a space where the `T` goes.
+    """
+    text = text.replace("Z", "+00:00")
+    try:
+        return datetime.fromisoformat(text)
+    except ValueError:
+        return datetime.fromisoformat(re.sub(r" (\d{2}:\d{2})$", r"+\1", text))
+
+
+def resolve(policy):
+    """Every rule that will actually be evaluated, paired with where it came from.
+
+    One place answers "what applies to this policy", so the endpoint that
+    reports the rules and the endpoint that runs them cannot disagree. They did
+    disagree: /policies served the file verbatim while /check also applied the
+    platform's rules, so a policy stating none was published as requiring
+    nothing while three conditions were being checked.
+
+    When policies gain a parent (#4), only this walks the chain — both callers
+    follow without changing.
+    """
+    return ([(rule, "platform") for rule in baseline_rules(policy)]
+            + [(rule, "policy") for rule in policy["rules"]])
+
+
 def load_policies(path):
-    """Read the policy file, refusing to start on a rule we cannot answer.
+    """Read the policy file, refusing to start on anything we cannot answer.
 
     A wrong verdict is worse than no service, and policies.yaml is meant to be
     a file a non-programmer edits by diff — so what cannot be answered honestly
@@ -54,6 +134,32 @@ def load_policies(path):
             if not str(source).startswith(("https://", "http://")):
                 raise ValueError(f"policy '{policy_id}': source {source!r} is not a URL")
         for rule in policy["rules"]:
+            # A typo in a metric or operator name would otherwise load fine and
+            # 500 at request time. This file is meant to be edited by someone
+            # who does not read Python, so it fails here instead, by name.
+            if rule["metric"] not in metrics.METRICS:
+                raise ValueError(
+                    f"policy '{policy_id}': unknown metric {rule['metric']!r}. "
+                    f"Known: {', '.join(sorted(metrics.METRICS))}"
+                )
+            if rule["operator"] not in rules.OPERATORS:
+                raise ValueError(
+                    f"policy '{policy_id}': unknown operator {rule['operator']!r}. "
+                    f"Known: {', '.join(sorted(rules.OPERATORS))}"
+                )
+            # Names are not enough: a metric that takes no wiki, given one,
+            # or one that requires a wiki, given none, both load fine and then
+            # raise TypeError at request time as a 500. Bind the parameters
+            # here so the mistake is named at startup instead.
+            given = {key: value for key, value in rule.items()
+                     if key not in ("metric", "operator", "value", "offset")}
+            try:
+                inspect.signature(metrics.METRICS[rule["metric"]]).bind(
+                    None, None, **given)
+            except TypeError as mismatch:
+                raise ValueError(
+                    f"policy '{policy_id}': rule {rule['metric']!r} — {mismatch}"
+                ) from None
             if rule["metric"] != "edit_count":
                 continue
             # We settle a count by asking for one row per edit up to the
@@ -121,7 +227,7 @@ def index():
         repository=REPOSITORY,
         endpoints={
             "/check": "?user=<name>&policy=<id>",
-            "/policies": "every policy and the rules it becomes",
+            "/policies": "every policy and the rules a person wrote from it",
             "/health": "uptime check",
         },
     )
@@ -134,13 +240,51 @@ def health():
 
 @app.get("/policies")
 def policies():
-    """Every policy this tool knows, with its source wording and its rules.
+    """What there is to choose from — enough to pick one, not the whole file.
 
-    The mapping in full: what a community wrote, how it reads in English, and
-    the rules it becomes. Anyone can check our reading of their own policy
-    without running a single query.
+    Answering "which policies exist" should not cost a reader every word of
+    every community's page. Each entry names itself and links to its own detail;
+    `?wiki=` narrows to one project, since that is how somebody looking for a
+    policy actually looks.
     """
-    return jsonify(policies=POLICIES)
+    wanted = (request.args.get("wiki") or "").strip()
+    known_wikis = sorted({p["wiki"] for p in POLICIES.values() if p.get("wiki")})
+    if wanted and wanted not in known_wikis:
+        return jsonify(error=f"No policies for '{wanted}'.",
+                       known_wikis=known_wikis), 404
+
+    chosen = {policy_id: policy for policy_id, policy in POLICIES.items()
+              if not wanted or policy.get("wiki") == wanted}
+    return jsonify(
+        wikis=known_wikis,
+        policies=[{
+            "id": policy_id,
+            "title": policy.get("title"),
+            "wiki": policy.get("wiki"),
+            "scope": policy.get("scope"),
+            "verified": str(policy.get("verified", "")),
+            "rule_count": len(resolve(policy)),
+            "detail": f"/policies/{policy_id}",
+        } for policy_id, policy in sorted(chosen.items())],
+    )
+
+
+@app.get("/policies/<policy_id>")
+def policy_detail(policy_id):
+    """One policy in full: the community's wording, and the rules it becomes.
+
+    Every rule that would actually be evaluated, tagged by origin — the same
+    resolution /check runs, so the two cannot describe different things.
+    """
+    policy = POLICIES.get(policy_id)
+    if policy is None:
+        return jsonify(error=f"Unknown policy '{policy_id}'.",
+                       known_policies=sorted(POLICIES)), 404
+    return jsonify({**policy,
+                    "id": policy_id,
+                    "verified": str(policy.get("verified", "")),
+                    "rules": [{**rule, "source": origin}
+                              for rule, origin in resolve(policy)]})
 
 
 @app.get("/check")
@@ -148,7 +292,12 @@ def policies():
 def check():
     """Check one user against one policy."""
     raw_user = request.args.get("user") or ""
-    policy_id = (request.args.get("policy") or "").strip()
+    # `event` is what wiki-polis's deployed client sends (v2/app.py:1547). It
+    # was removed once on the grounds that no consumer existed; the consumer
+    # existed and was in production, and only the URL pointing at us was
+    # missing. Accepting both costs one line and cannot break on a name.
+    policy_id = (request.args.get("policy")
+                 or request.args.get("event") or "").strip()
 
     if not raw_user.strip() or not policy_id:
         return jsonify(error="Provide both 'user' and 'policy'."), 400
@@ -164,7 +313,23 @@ def check():
         return jsonify(error="That is not a valid username."), 400
 
     policy = POLICIES[policy_id]
-    moment = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc)
+    # A policy anchors on its own moment — "150 edits by 1 November", "two
+    # weeks before the vote opened". Without being told which, we can only
+    # measure from now, which quietly answers a different question. Callers
+    # that know the date say so; a future one is allowed, since asking before
+    # a vote opens is the ordinary case.
+    requested = (request.args.get("as_of") or "").strip()
+    if requested:
+        try:
+            moment = _parse_moment(requested)
+        except ValueError:
+            return jsonify(error="'as_of' must be an ISO 8601 timestamp, "
+                                 "for example 2026-11-01T00:00:00Z"), 400
+        if moment.tzinfo is None:
+            moment = moment.replace(tzinfo=timezone.utc)
+    else:
+        moment = now
     lookup = mediawiki.Lookup(username)
 
     try:
@@ -172,7 +337,8 @@ def check():
         # queries answer "no edits" for a nonexistent account just as they do
         # for a new one, so without this a typo would read as a failed vote.
         lookup.account(policy["wiki"])
-        applied = [rules.apply(lookup, rule, moment) for rule in policy["rules"]]
+        applied = [{**rules.apply_safely(lookup, rule, moment), "source": origin}
+                   for rule, origin in resolve(policy)]
     except mediawiki.UsernameInvalid:
         return jsonify(_verdict(username, policy_id, policy, [], lookup, moment,
                                 verdict="not_eligible",
@@ -200,27 +366,30 @@ def check():
         verdict = "eligible"
         reason = "Meets every rule that can be checked automatically."
 
-    body = _verdict(username, policy_id, policy, applied, lookup, moment,
+    body = _verdict(username, policy_id, policy, applied, lookup, moment, now=now,
                     verdict=verdict, reason=reason)
     return jsonify(body)
 
 
-def _verdict(username, policy_id, policy, applied, lookup, moment, *, verdict, reason):
+def _verdict(username, policy_id, policy, applied, lookup, moment, *, verdict, reason, now=None):
     """Assemble the response. Order matters: verdict first, evidence after."""
     body = {
         "verdict": verdict,
         "user": username,
         "policy": policy_id,
         "reason": reason,
-        "checked_at": moment.isoformat(timespec="seconds"),
+        # When we ran, and what we measured against. They differ whenever a
+        # caller supplies the moment its policy anchors on.
+        "checked_at": (now or moment).isoformat(timespec="seconds"),
+        "as_of": moment.isoformat(timespec="seconds"),
         "criteria": applied,
         "policy_text": {
             "language": policy["language"],
             "original": policy["original_text"],
             "english": policy["english"],
             "sources": policy["sources"],
-            # When we last read the policy page. How old is too old is the
-            # reader's call, not ours.
+            # When a person last read the policy page. How old is too old is
+            # the reader's call, not ours.
             # str(), because YAML reads an unquoted 2026-09-01 as a date object
             # and Flask would render that as "Tue, 01 Sep 2026 00:00:00 GMT".
             "verified": str(policy.get("verified", "")),

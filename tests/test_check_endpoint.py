@@ -39,16 +39,16 @@ def test_meta_global_eligible(client, monkeypatch):
     assert body["verdict"] == "eligible"
 
 
-def test_frwiki_eligible_with_no_rules(client, monkeypatch):
+def test_frwiki_has_no_rules_of_its_own_but_still_gets_the_global_rules(client, monkeypatch):
+    """French Wikipedia codifies no eligibility for surveys — but "no policy"
+    never meant "a blocked account may vote". The platform rules apply anyway,
+    and are marked as such so nobody mistakes them for something frwiki wrote.
+    """
     use_fixture(monkeypatch, "frwiki-sondage")
     body = client.get("/check?user=ExampleUser&policy=frwiki-sondage").get_json()
     assert body["verdict"] == "eligible"
-    assert body["criteria"] == []
-    # Even a policy with zero rules confirms the account exists first.
-    assert len(body["queries"]) == 1
-
-
-# --- trap #4: a nonexistent account is checked once, before any rule runs ---
+    assert [c["source"] for c in body["criteria"]] == ["platform"] * 3
+    assert not any(c["source"] == "policy" for c in body["criteria"])
 
 def test_nonexistent_account_makes_exactly_one_query(client, monkeypatch):
     use_fixture(monkeypatch, "nonexistent_account")
@@ -87,10 +87,6 @@ def test_amount_unit_duration_converts_to_days():
     assert rules.as_duration({"amount": 2, "unit": "weeks"}) == timedelta(days=14)
     assert rules.as_duration({"amount": 12, "unit": "months"}) == timedelta(days=360)
     assert rules.as_duration(5) == timedelta(days=5)  # bare int still means days
-
-
-# --- the cache -----------------------------------------------------------
-
 
 
 def test_normalise_username_collapses_underscores_and_case():

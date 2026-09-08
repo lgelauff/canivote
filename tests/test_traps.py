@@ -67,3 +67,17 @@ def test_unmeasurable_rule_is_none_not_false():
     assert not result["passed"]
     assert result["passed"] is not False
     assert "unmeasurable" in result
+
+
+def test_an_unmeasurable_criterion_still_reports_prose(monkeypatch):
+    """`label` must mean one thing on every branch.
+
+    The unmeasurable path used to fall back to the metric identifier, so a
+    reader saw "time_since_first_edit" on one criterion and "edits on Dutch
+    Wikipedia" on the next — the same key carrying two kinds of thing depending
+    on which branch happened to run.
+    """
+    import metrics
+    gap = metrics.NotMeasurable("no registration on record",
+                                label="time since account creation on X")
+    assert gap.label != "time_since_registration"

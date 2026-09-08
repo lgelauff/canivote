@@ -32,8 +32,34 @@ class UnknownMetric(Exception):
     """A policy names a quantity this tool cannot measure."""
 
 
+class Absent(Exception):
+    """There is nothing to measure, and that settles the comparison.
+
+    Distinct from NotMeasurable, which means the fact exists and we cannot see
+    it. An account with no edits has no first edit, so "first edit at least two
+    weeks ago" is definitively false — reporting that as "could not be checked"
+    would invite a human to look into something already answered.
+
+    Carries the reason and the label, since the metric knows both.
+    """
+
+    def __init__(self, reason, label=None):
+        super().__init__(reason)
+        self.label = label
+
+
 class NotMeasurable(Exception):
-    """The quantity exists but cannot be measured for this account."""
+    """The quantity exists but cannot be measured for this account.
+
+    Carries the label too. A metric knows what it is called before it discovers
+    it cannot answer, and without that the criterion would report a bare
+    identifier where every other criterion reports prose — the same key meaning
+    two different kinds of thing depending on which branch ran.
+    """
+
+    def __init__(self, reason, label=None):
+        super().__init__(reason)
+        self.label = label
 
 
 class AtLeast(int):
@@ -66,7 +92,8 @@ def time_since_first_edit(lookup, as_of, *, wiki):
     """
     first = lookup.first_edit(wiki, before=as_of)
     if first is None:
-        raise NotMeasurable(f"no edits on {wiki_name(wiki)}")
+        raise Absent(f"no edits on {wiki_name(wiki)}",
+                     label=f"time since first edit on {wiki_name(wiki)}")
     return as_of - first, f"time since first edit on {wiki_name(wiki)}"
 
 
@@ -98,7 +125,8 @@ def time_since_registration(lookup, as_of, *, wiki):
     if not registered:
         raise NotMeasurable(
             f"{wiki_name(wiki)} has no registration date on record for this "
-            "account, which is normal for accounts created before 2006"
+            "account, which is normal for accounts created before 2006",
+            label=f"time since account creation on {wiki_name(wiki)}",
         )
     created = datetime.fromisoformat(registered.replace("Z", "+00:00"))
     return as_of - created, f"time since account creation on {wiki_name(wiki)}"
@@ -116,13 +144,25 @@ def is_blocked(lookup, as_of, *, wiki):
     return blocked, f"blocked site-wide on {wiki_name(wiki)}"
 
 
+def has_global_account(lookup, as_of):
+    """Whether the account is unified across Wikimedia (has a CentralAuth record).
+
+    Since unification every account gets one, so an account without is anomalous
+    rather than ordinary. Stating it as its own condition means someone who
+    fails it is told what they failed, and can see it in the criteria — rather
+    than being refused with "no such account" for an account that plainly does
+    exist on the wiki they asked about.
+    """
+    return bool(lookup.global_account()), "has a unified (CentralAuth) account"
+
+
 def is_globally_locked(lookup, as_of):
-    """Whether stewards have locked the account across all Wikimedia wikis."""
+    """Whether the account is locked across all Wikimedia wikis."""
     return "locked" in lookup.global_account(), "globally locked"
 
 
 def is_globally_blocked(lookup, as_of):
-    """Whether stewards have globally blocked the account."""
+    """Whether a global block applies to the account."""
     return lookup.globally_blocked(), "globally blocked"
 
 
@@ -132,6 +172,7 @@ METRICS = {
     "edit_count": edit_count,
     "user_groups": user_groups,
     "is_blocked": is_blocked,
+    "has_global_account": has_global_account,
     "is_globally_locked": is_globally_locked,
     "is_globally_blocked": is_globally_blocked,
 }
