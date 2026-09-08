@@ -76,13 +76,14 @@ def baseline_rules(policy):
     """
     if policy.get("baseline") is False:
         return []
-    implied = [dict(rule) for rule in GLOBAL_BASELINE]
-    # A policy stating one of these keeps its own version, so its wording stays
-    # the authority. Keyed by wiki as well as metric: a rule about another wiki
-    # is a different requirement and must not suppress this one.
-    stated = {(rule["metric"], rule.get("wiki")) for rule in policy["rules"]}
-    return [rule for rule in implied
-            if (rule["metric"], rule.get("wiki")) not in stated]
+    # No attempt to suppress a rule a policy also states. Rules are ANDed and
+    # lookups are memoised, so a repeat costs no upstream request and cannot
+    # change a verdict — the only thing deduplication bought was a shorter
+    # list, and it bought that at the price of deciding when two rules are
+    # "the same", which is where it went wrong. If a community states a
+    # condition the software also imposes, the response shows both, one marked
+    # `policy` and one `platform`, which is the more honest reading anyway.
+    return [dict(rule) for rule in GLOBAL_BASELINE]
 
 
 def load_policies(path):

@@ -26,20 +26,20 @@ def test_a_policy_that_states_a_rule_itself_does_not_get_it_twice():
     assert "is_blocked" not in _metrics(baseline_rules(policy))
 
 
-def test_no_rule_is_ever_evaluated_twice():
-    """No policy ends up asking the same question twice.
+def test_a_policy_may_repeat_a_platform_rule_and_both_are_shown(tmp_path):
+    """No deduplication, deliberately.
 
-    Identity is the whole rule, not the metric name: a policy may legitimately
-    have two `edit_count` rules measuring different quantities — German
-    Wikipedia wants 200 all-time and 50 in the last twelve months. What must
-    never happen is the *same* question appearing twice, which is what the
-    baseline dedup prevents.
+    Rules are ANDed and lookups are memoised, so a repeat costs no upstream
+    request and cannot change a verdict. Suppressing one meant deciding when
+    two rules are "the same", and that decision was wrong: it keyed on the
+    metric alone, so a rule about one wiki silently switched off the check for
+    another. Showing both — one `policy`, one `platform` — is cheaper and says
+    something true: the community stated this itself as well.
     """
-    for policy_id, policy in POLICIES.items():
-        combined = baseline_rules(policy) + policy["rules"]
-        seen = [tuple(sorted((k, str(v)) for k, v in rule.items())) for rule in combined]
-        assert len(seen) == len(set(seen)), f"{policy_id} asks the same question twice"
-
+    policy = {"wiki": "nl.wikipedia.org", "rules": [
+        {"metric": "is_globally_locked", "operator": "is", "value": False}]}
+    implied = [r["metric"] for r in baseline_rules(policy)]
+    assert "is_globally_locked" in implied, "the platform rule still applies"
 
 def test_a_local_block_is_not_a_platform_rule(tmp_path):
     """A block on one wiki is that community's sanction, not the software's.
