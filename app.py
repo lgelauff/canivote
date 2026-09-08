@@ -58,23 +58,31 @@ RATE_LIMIT = (
 # and they are marked `source: platform` in the response so a reader can tell
 # what the community asked for from what the software imposes.
 GLOBAL_BASELINE = (
+    {"metric": "has_global_account", "operator": "is", "value": True},
     {"metric": "is_globally_locked", "operator": "is", "value": False},
     {"metric": "is_globally_blocked", "operator": "is", "value": False},
 )
 
 
 def baseline_rules(policy):
-    """The implied rules for a policy: global always, local when scoped to a wiki."""
+    """The rules the software imposes on every check, whatever a policy says.
+
+    Only conditions that hold movement-wide belong here. A *local* block is one
+    community's sanction under its own blocking policy, and whether it also
+    removes a vote is that community's decision to write down — some say it
+    does, and WMF Board elections disqualify only an account blocked on more
+    than one project. Adding it here would impose one community's sanction on
+    policies that never asked for it.
+    """
     if policy.get("baseline") is False:
         return []
-    rules = [dict(rule) for rule in GLOBAL_BASELINE]
-    if policy.get("wiki"):
-        rules.append({"metric": "is_blocked", "wiki": policy["wiki"],
-                      "operator": "is", "value": False})
-    # A policy that states one of these itself keeps its own version, so the
-    # community's wording stays the authority and nothing is checked twice.
-    stated = {rule["metric"] for rule in policy["rules"]}
-    return [rule for rule in rules if rule["metric"] not in stated]
+    implied = [dict(rule) for rule in GLOBAL_BASELINE]
+    # A policy stating one of these keeps its own version, so its wording stays
+    # the authority. Keyed by wiki as well as metric: a rule about another wiki
+    # is a different requirement and must not suppress this one.
+    stated = {(rule["metric"], rule.get("wiki")) for rule in policy["rules"]}
+    return [rule for rule in implied
+            if (rule["metric"], rule.get("wiki")) not in stated]
 
 
 def load_policies(path):

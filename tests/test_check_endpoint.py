@@ -39,7 +39,7 @@ def test_meta_global_eligible(client, monkeypatch):
     assert body["verdict"] == "eligible"
 
 
-def test_frwiki_has_no_rules_of_its_own_but_still_gets_the_baseline(client, monkeypatch):
+def test_frwiki_has_no_rules_of_its_own_but_still_gets_the_global_rules(client, monkeypatch):
     """French Wikipedia codifies no eligibility for surveys — but "no policy"
     never meant "a blocked account may vote". The platform rules apply anyway,
     and are marked as such so nobody mistakes them for something frwiki wrote.

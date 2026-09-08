@@ -116,6 +116,18 @@ def is_blocked(lookup, as_of, *, wiki):
     return blocked, f"blocked site-wide on {wiki_name(wiki)}"
 
 
+def has_global_account(lookup, as_of):
+    """Whether the account is unified across Wikimedia (has a CentralAuth record).
+
+    Since unification every account gets one, so an account without is anomalous
+    rather than ordinary. Stating it as its own condition means someone who
+    fails it is told what they failed, and can see it in the criteria — rather
+    than being refused with "no such account" for an account that plainly does
+    exist on the wiki they asked about.
+    """
+    return bool(lookup.global_account()), "has a unified (CentralAuth) account"
+
+
 def is_globally_locked(lookup, as_of):
     """Whether the account is locked across all Wikimedia wikis."""
     return "locked" in lookup.global_account(), "globally locked"
@@ -132,6 +144,7 @@ METRICS = {
     "edit_count": edit_count,
     "user_groups": user_groups,
     "is_blocked": is_blocked,
+    "has_global_account": has_global_account,
     "is_globally_locked": is_globally_locked,
     "is_globally_blocked": is_globally_blocked,
 }

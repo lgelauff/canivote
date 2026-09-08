@@ -100,16 +100,22 @@ class Lookup:
         return self._accounts[wiki]
 
     def global_account(self):
-        """CentralAuth facts, including whether the account is globally locked."""
+        """CentralAuth facts, or an empty record if the account has none.
+
+        An account with no CentralAuth entry is not an account that does not
+        exist — it is one whose local existence we have usually already
+        confirmed. A lock is a CentralAuth attribute, so no record means no lock
+        can be in force, and the honest answer is "not locked". Raising here
+        would refuse a real person on every policy, since the platform rules
+        ask this of every check.
+        """
         if self._global is None:
             data = self._get("meta.wikimedia.org", {
                 "action": "query", "meta": "globaluserinfo",
                 "guiuser": self.username,
             })
             info = data["query"]["globaluserinfo"]
-            if "missing" in info:
-                raise UserNotFound(self.username)
-            self._global = info
+            self._global = {} if "missing" in info else info
         return self._global
 
     def globally_blocked(self):

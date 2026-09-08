@@ -41,13 +41,33 @@ def test_no_rule_is_ever_evaluated_twice():
         assert len(seen) == len(set(seen)), f"{policy_id} asks the same question twice"
 
 
-def test_a_wiki_scoped_policy_gets_a_local_block_rule():
-    policy = POLICIES["frwiki-sondage"]
-    assert not policy["rules"]                                 # states nothing itself
-    implied = baseline_rules(policy)
-    assert _metrics(implied) == ["is_globally_locked", "is_globally_blocked", "is_blocked"]
-    assert implied[-1]["wiki"] == "fr.wikipedia.org"
+def test_a_local_block_is_not_a_platform_rule(tmp_path):
+    """A block on one wiki is that community's sanction, not the software's.
 
+    Whether it also removes a vote is for that community to write down — WMF
+    Board elections, for instance, disqualify only an account blocked on more
+    than one project. Imposing it by default would apply one community's
+    sanction to policies that never asked for it.
+    """
+    implied = baseline_rules({"wiki": "nl.wikipedia.org", "rules": []})
+    assert [r["metric"] for r in implied] == [
+        "has_global_account", "is_globally_locked", "is_globally_blocked"]
+    assert not any(r["metric"] == "is_blocked" for r in implied)
+
+
+def test_dedup_is_keyed_by_wiki_as_well_as_metric(tmp_path):
+    """A rule about another wiki is a different requirement.
+
+    A policy scoped to one wiki that states a rule about a second must still
+    get the platform rule for its own — otherwise naming any wiki silently
+    switches the check off.
+    """
+    policy = {"wiki": "meta.wikimedia.org", "rules": [
+        {"metric": "is_globally_locked", "wiki": "en.wikipedia.org",
+         "operator": "is", "value": False}]}
+    implied = baseline_rules(policy)
+    assert any(r["metric"] == "is_globally_locked" and r.get("wiki") is None
+               for r in implied), "a rule about another wiki suppressed this one"
 
 def test_every_global_rule_reaches_every_policy():
     """A community may decide its own wiki's rules do not apply to a process.
