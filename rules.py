@@ -8,7 +8,13 @@ judgement about what a community meant, which lives in the policy's own words.
 
 from datetime import timedelta
 
-from metrics import Absent, AtLeast, NotMeasurable, describe_span, measure
+import logging
+
+from mediawiki import UpstreamUnavailable
+from metrics import (Absent, AtLeast, NotMeasurable, describe_span,
+                     measure)
+
+LOG = logging.getLogger(__name__)
 
 UNITS = {
     "days": 1,
@@ -75,6 +81,38 @@ def _readable(value):
     if isinstance(value, int):
         return f"{value:,}"
     return str(value)
+
+
+def apply_safely(lookup, rule, moment):
+    """Evaluate one rule, surviving a defect in that rule.
+
+    A broken rule is our bug, not a reason to lose the whole verdict — the
+    other rules were answered honestly and a reader is entitled to them. It is
+    reported in place, neither passed nor failed, and the verdict cannot come
+    out eligible while one of its conditions is unknown.
+
+    Upstream failure is deliberately not caught here: if Wikimedia cannot be
+    reached, every remaining rule is unanswerable too, and a mostly-empty
+    verdict would look more complete than it is.
+    """
+    try:
+        return apply(lookup, rule, moment)
+    except UpstreamUnavailable:
+        raise
+    except Exception as defect:
+        LOG.exception("rule %s (%s) failed to evaluate",
+                      rule.get("metric"), rule.get("wiki", "global"))
+        return {
+            "metric": rule.get("metric"),
+            "label": rule.get("metric"),
+            "scope": rule.get("wiki", "global"),
+            "operator": OPERATORS.get(rule.get("operator"), (None, "?"))[1],
+            "required": {"value": _machine(rule.get("value")),
+                         "display": _readable(rule.get("value"))},
+            "observed": None,
+            "passed": None,
+            "broken": f"{type(defect).__name__}: {defect}",
+        }
 
 
 def apply(lookup, rule, moment):

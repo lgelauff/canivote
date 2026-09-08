@@ -332,7 +332,7 @@ def check():
         # queries answer "no edits" for a nonexistent account just as they do
         # for a new one, so without this a typo would read as a failed vote.
         lookup.account(policy["wiki"])
-        applied = [{**rules.apply(lookup, rule, moment), "source": origin}
+        applied = [{**rules.apply_safely(lookup, rule, moment), "source": origin}
                    for rule, origin in resolve(policy)]
     except mediawiki.UsernameInvalid:
         return jsonify(_verdict(username, policy_id, policy, [], lookup, moment,
