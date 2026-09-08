@@ -43,10 +43,15 @@ nlwiki-stemprocedure:
   notes: >-
     Article 3 of the Stemprocedure is the general rule. Its two clauses use
     different reference points — the vote opening for the first edit, the
-    proposal being posted for the edit count — and the gap between them differs
-    per vote, so both are evaluated at the moment of asking. That is slightly
-    more generous than the policy, since edits made after the proposal was
-    posted still count.
+    proposal being posted for the edit count — and the gap between them is set
+    per vote rather than by the policy, so this entry cannot carry it.
+
+    Pass `as_of` set to the vote's opening to place the first-edit clause
+    correctly. The edit-count clause anchors earlier still, on the proposal, and
+    an `offset` on that rule can express the difference for a particular vote.
+    With neither, both are measured from now: ask after the vote opens and edits
+    made since the proposal are wrongly counted, ask before it and the bar sits
+    earlier than the policy sets it.
 
     Voting rights, once earned, are held for life ("voor het leven"): nl.wikipedia
     sets no ongoing-activity requirement, so nothing here expires.
@@ -142,13 +147,16 @@ enwiki-arbcom:
       All requirements must be met from the same named account.
   notes: >-
     The real policy fixes calendar dates (1 October, 1 November) that are reset
-    for each annual election. They are expressed here as durations before the
-    moment of asking, so that the entry stays correct year to year — but this is
-    an approximation, and it errs towards admitting people. Asked on 15 November,
-    "registered before 1 October" becomes "registered before 16 October", so an
-    account created on 10 October is reported eligible when the policy excludes
-    it. Fixing this properly needs the caller to supply the election's own
-    cutoff date rather than the tool assuming now.
+    for each annual election, so they are written here as durations rather than
+    dates, and the entry stays correct year to year.
+
+    Durations are measured from whatever moment the check is made against, so
+    **pass `as_of` set to the election's own cutoff** and they land exactly where
+    the policy puts them. Without it the moment is "now", and the answer drifts
+    in both directions rather than one: asked after 1 November the window is too
+    late and admits people the policy excludes, asked before it the window is too
+    early and excludes people the policy admits. An earlier version of this note
+    claimed the drift was always generous. It is not.
 
 meta-global:
   wiki: meta.wikimedia.org
