@@ -33,7 +33,17 @@ class UnknownMetric(Exception):
 
 
 class NotMeasurable(Exception):
-    """The quantity exists but cannot be measured for this account."""
+    """The quantity exists but cannot be measured for this account.
+
+    Carries the label too. A metric knows what it is called before it discovers
+    it cannot answer, and without that the criterion would report a bare
+    identifier where every other criterion reports prose — the same key meaning
+    two different kinds of thing depending on which branch ran.
+    """
+
+    def __init__(self, reason, label=None):
+        super().__init__(reason)
+        self.label = label
 
 
 class AtLeast(int):
@@ -66,7 +76,8 @@ def time_since_first_edit(lookup, as_of, *, wiki):
     """
     first = lookup.first_edit(wiki, before=as_of)
     if first is None:
-        raise NotMeasurable(f"no edits on {wiki_name(wiki)}")
+        raise NotMeasurable(f"no edits on {wiki_name(wiki)}",
+                            label=f"time since first edit on {wiki_name(wiki)}")
     return as_of - first, f"time since first edit on {wiki_name(wiki)}"
 
 
@@ -98,7 +109,8 @@ def time_since_registration(lookup, as_of, *, wiki):
     if not registered:
         raise NotMeasurable(
             f"{wiki_name(wiki)} has no registration date on record for this "
-            "account, which is normal for accounts created before 2006"
+            "account, which is normal for accounts created before 2006",
+            label=f"time since account creation on {wiki_name(wiki)}",
         )
     created = datetime.fromisoformat(registered.replace("Z", "+00:00"))
     return as_of - created, f"time since account creation on {wiki_name(wiki)}"

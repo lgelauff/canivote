@@ -121,7 +121,7 @@ def apply(lookup, rule, moment):
         # though we had, in either direction.
         return {
             "metric": rule["metric"],
-            "label": rule["metric"],
+            "label": gap.label or rule["metric"],
             "scope": scope,
             "operator": phrase,
             "required": {"value": _machine(threshold), "display": _readable(threshold)},
