@@ -47,3 +47,13 @@ def test_an_unknown_policy_says_which_ones_exist():
     response = _client().get("/policies/nosuch")
     assert response.status_code == 404
     assert "frwiki-sondage" in response.get_json()["known_policies"]
+
+
+def test_event_is_accepted_as_a_name_for_policy():
+    """wiki-polis's deployed client sends `event`, not `policy`.
+
+    Removed once as an unused compatibility shim — it was not unused, only
+    unreached, because the URL pointing at this service had never been set.
+    """
+    assert _client().get(
+        "/check?user=Effeietsanders&event=frwiki-sondage").status_code == 200

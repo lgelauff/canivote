@@ -292,7 +292,12 @@ def policy_detail(policy_id):
 def check():
     """Check one user against one policy."""
     raw_user = request.args.get("user") or ""
-    policy_id = (request.args.get("policy") or "").strip()
+    # `event` is what wiki-polis's deployed client sends (v2/app.py:1547). It
+    # was removed once on the grounds that no consumer existed; the consumer
+    # existed and was in production, and only the URL pointing at us was
+    # missing. Accepting both costs one line and cannot break on a name.
+    policy_id = (request.args.get("policy")
+                 or request.args.get("event") or "").strip()
 
     if not raw_user.strip() or not policy_id:
         return jsonify(error="Provide both 'user' and 'policy'."), 400
