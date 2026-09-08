@@ -22,6 +22,8 @@ several outbound ones, from an IP shared with every other Toolforge tool, so
 this file is as careful about what it sends upstream as about what it answers.
 """
 
+import inspect
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -86,6 +88,21 @@ def baseline_rules(policy):
     return [dict(rule) for rule in GLOBAL_BASELINE]
 
 
+def _parse_moment(text):
+    """Parse an ISO 8601 timestamp from a query string.
+
+    A `+` in a query string decodes to a space, so `...T00:00:00+02:00` arrives
+    as `...T00:00:00 02:00` and will not parse. Rather than tell a caller their
+    valid timestamp is invalid, restore the sign — but only on a trailing
+    offset, since ISO also allows a space where the `T` goes.
+    """
+    text = text.replace("Z", "+00:00")
+    try:
+        return datetime.fromisoformat(text)
+    except ValueError:
+        return datetime.fromisoformat(re.sub(r" (\d{2}:\d{2})$", r"+\1", text))
+
+
 def resolve(policy):
     """Every rule that will actually be evaluated, paired with where it came from.
 
@@ -130,6 +147,19 @@ def load_policies(path):
                     f"policy '{policy_id}': unknown operator {rule['operator']!r}. "
                     f"Known: {', '.join(sorted(rules.OPERATORS))}"
                 )
+            # Names are not enough: a metric that takes no wiki, given one,
+            # or one that requires a wiki, given none, both load fine and then
+            # raise TypeError at request time as a 500. Bind the parameters
+            # here so the mistake is named at startup instead.
+            given = {key: value for key, value in rule.items()
+                     if key not in ("metric", "operator", "value", "offset")}
+            try:
+                inspect.signature(metrics.METRICS[rule["metric"]]).bind(
+                    None, None, **given)
+            except TypeError as mismatch:
+                raise ValueError(
+                    f"policy '{policy_id}': rule {rule['metric']!r} — {mismatch}"
+                ) from None
             if rule["metric"] != "edit_count":
                 continue
             # We settle a count by asking for one row per edit up to the
@@ -245,7 +275,23 @@ def check():
         return jsonify(error="That is not a valid username."), 400
 
     policy = POLICIES[policy_id]
-    moment = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc)
+    # A policy anchors on its own moment — "150 edits by 1 November", "two
+    # weeks before the vote opened". Without being told which, we can only
+    # measure from now, which quietly answers a different question. Callers
+    # that know the date say so; a future one is allowed, since asking before
+    # a vote opens is the ordinary case.
+    requested = (request.args.get("as_of") or "").strip()
+    if requested:
+        try:
+            moment = _parse_moment(requested)
+        except ValueError:
+            return jsonify(error="'as_of' must be an ISO 8601 timestamp, "
+                                 "for example 2026-11-01T00:00:00Z"), 400
+        if moment.tzinfo is None:
+            moment = moment.replace(tzinfo=timezone.utc)
+    else:
+        moment = now
     lookup = mediawiki.Lookup(username)
 
     try:
@@ -282,19 +328,22 @@ def check():
         verdict = "eligible"
         reason = "Meets every rule that can be checked automatically."
 
-    body = _verdict(username, policy_id, policy, applied, lookup, moment,
+    body = _verdict(username, policy_id, policy, applied, lookup, moment, now=now,
                     verdict=verdict, reason=reason)
     return jsonify(body)
 
 
-def _verdict(username, policy_id, policy, applied, lookup, moment, *, verdict, reason):
+def _verdict(username, policy_id, policy, applied, lookup, moment, *, verdict, reason, now=None):
     """Assemble the response. Order matters: verdict first, evidence after."""
     body = {
         "verdict": verdict,
         "user": username,
         "policy": policy_id,
         "reason": reason,
-        "checked_at": moment.isoformat(timespec="seconds"),
+        # When we ran, and what we measured against. They differ whenever a
+        # caller supplies the moment its policy anchors on.
+        "checked_at": (now or moment).isoformat(timespec="seconds"),
+        "as_of": moment.isoformat(timespec="seconds"),
         "criteria": applied,
         "policy_text": {
             "language": policy["language"],

@@ -156,6 +156,23 @@ the tool's reading of it, which is the one thing this design exists to avoid.
 Clauses that cannot be mechanised are carried as text under `not_checked`
 rather than approximated.
 
+### Asking as of a particular moment
+
+A policy anchors on its own instant — "150 mainspace edits by 1 November", "two
+weeks before the vote opened". Pass `as_of` to measure against it:
+
+```
+/check?user=Example&policy=enwiki-arbcom&as_of=2026-11-01T00:00:00Z
+```
+
+Without it, everything is measured from now, which quietly answers a different
+question: asked on 15 November, "by 1 November" becomes "by 15 November" and a
+fortnight of edits the policy excludes are counted.
+
+A future `as_of` is allowed — asking whether you will be eligible when voting
+opens is the ordinary case. The response reports `checked_at` (when we ran) and
+`as_of` (what we measured against) separately.
+
 ## Rate limits
 
 `/check` is rate limited. A request over the limit gets
