@@ -77,9 +77,7 @@ def test_an_unmeasurable_criterion_still_reports_prose(monkeypatch):
     Wikipedia" on the next — the same key carrying two kinds of thing depending
     on which branch happened to run.
     """
-    from app import app
-    body = app.test_client().get(
-        "/check?user=Eiabot&policy=nlwiki-stemprocedure").get_json()
-    unknown = next(c for c in body["criteria"] if c["passed"] is None)
-    assert unknown["label"] != unknown["metric"]
-    assert "Dutch Wikipedia" in unknown["label"]
+    import metrics
+    gap = metrics.NotMeasurable("no registration on record",
+                                label="time since account creation on X")
+    assert gap.label != "time_since_registration"

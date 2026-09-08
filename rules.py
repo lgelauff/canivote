@@ -8,7 +8,7 @@ judgement about what a community meant, which lives in the policy's own words.
 
 from datetime import timedelta
 
-from metrics import AtLeast, NotMeasurable, describe_span, measure
+from metrics import Absent, AtLeast, NotMeasurable, describe_span, measure
 
 UNITS = {
     "days": 1,
@@ -116,6 +116,19 @@ def apply(lookup, rule, moment):
 
     try:
         seen, label = measure(lookup, rule["metric"], as_of, **parameters)
+    except Absent as nothing:
+        # Nothing to measure, and that answers the question: no first edit
+        # cannot be a first edit long enough ago. A definite failure, with the
+        # absence itself as the observation.
+        return {
+            "metric": rule["metric"],
+            "label": nothing.label or rule["metric"],
+            "scope": scope,
+            "operator": phrase,
+            "required": {"value": _machine(threshold), "display": _readable(threshold)},
+            "observed": {"value": None, "display": str(nothing)},
+            "passed": False,
+        }
     except NotMeasurable as gap:
         # Neither pass nor fail: a rule we cannot evaluate must not be scored as
         # though we had, in either direction.

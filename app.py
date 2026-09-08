@@ -1,8 +1,8 @@
 """canivote — does this person meet a wiki's voting-eligibility policy?
 
   /check?user=&policy=   the verdict, the rules behind it, and the queries used
-  /policies              every policy: a community's own wording, and the rules
-                         a person wrote from it
+  /policies              what there is to choose from; ?wiki= narrows it
+  /policies/<id>         one policy in full, and the rules it becomes
   /health                for uptime checks
   /                      what this is and where to report problems
 
@@ -240,18 +240,51 @@ def health():
 
 @app.get("/policies")
 def policies():
-    """Every policy this tool knows, with its source wording and its rules.
+    """What there is to choose from — enough to pick one, not the whole file.
 
-    The mapping in full: what a community wrote, how it reads in English, and
-    the rules it becomes. Anyone can check our reading of their own policy
-    without running a single query.
+    Answering "which policies exist" should not cost a reader every word of
+    every community's page. Each entry names itself and links to its own detail;
+    `?wiki=` narrows to one project, since that is how somebody looking for a
+    policy actually looks.
     """
-    return jsonify(policies={
-        policy_id: {**policy,
+    wanted = (request.args.get("wiki") or "").strip()
+    known_wikis = sorted({p["wiki"] for p in POLICIES.values() if p.get("wiki")})
+    if wanted and wanted not in known_wikis:
+        return jsonify(error=f"No policies for '{wanted}'.",
+                       known_wikis=known_wikis), 404
+
+    chosen = {policy_id: policy for policy_id, policy in POLICIES.items()
+              if not wanted or policy.get("wiki") == wanted}
+    return jsonify(
+        wikis=known_wikis,
+        policies=[{
+            "id": policy_id,
+            "title": policy.get("title"),
+            "wiki": policy.get("wiki"),
+            "scope": policy.get("scope"),
+            "verified": str(policy.get("verified", "")),
+            "rule_count": len(resolve(policy)),
+            "detail": f"/policies/{policy_id}",
+        } for policy_id, policy in sorted(chosen.items())],
+    )
+
+
+@app.get("/policies/<policy_id>")
+def policy_detail(policy_id):
+    """One policy in full: the community's wording, and the rules it becomes.
+
+    Every rule that would actually be evaluated, tagged by origin — the same
+    resolution /check runs, so the two cannot describe different things.
+    """
+    policy = POLICIES.get(policy_id)
+    if policy is None:
+        return jsonify(error=f"Unknown policy '{policy_id}'.",
+                       known_policies=sorted(POLICIES)), 404
+    return jsonify({**policy,
+                    "id": policy_id,
+                    "verified": str(policy.get("verified", "")),
                     "rules": [{**rule, "source": origin}
-                              for rule, origin in resolve(policy)]}
-        for policy_id, policy in POLICIES.items()
-    })
+                              for rule, origin in resolve(policy)]})
 
 
 @app.get("/check")

@@ -32,6 +32,22 @@ class UnknownMetric(Exception):
     """A policy names a quantity this tool cannot measure."""
 
 
+class Absent(Exception):
+    """There is nothing to measure, and that settles the comparison.
+
+    Distinct from NotMeasurable, which means the fact exists and we cannot see
+    it. An account with no edits has no first edit, so "first edit at least two
+    weeks ago" is definitively false — reporting that as "could not be checked"
+    would invite a human to look into something already answered.
+
+    Carries the reason and the label, since the metric knows both.
+    """
+
+    def __init__(self, reason, label=None):
+        super().__init__(reason)
+        self.label = label
+
+
 class NotMeasurable(Exception):
     """The quantity exists but cannot be measured for this account.
 
@@ -76,8 +92,8 @@ def time_since_first_edit(lookup, as_of, *, wiki):
     """
     first = lookup.first_edit(wiki, before=as_of)
     if first is None:
-        raise NotMeasurable(f"no edits on {wiki_name(wiki)}",
-                            label=f"time since first edit on {wiki_name(wiki)}")
+        raise Absent(f"no edits on {wiki_name(wiki)}",
+                     label=f"time since first edit on {wiki_name(wiki)}")
     return as_of - first, f"time since first edit on {wiki_name(wiki)}"
 
 
