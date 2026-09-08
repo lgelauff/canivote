@@ -86,6 +86,22 @@ def baseline_rules(policy):
     return [dict(rule) for rule in GLOBAL_BASELINE]
 
 
+def resolve(policy):
+    """Every rule that will actually be evaluated, paired with where it came from.
+
+    One place answers "what applies to this policy", so the endpoint that
+    reports the rules and the endpoint that runs them cannot disagree. They did
+    disagree: /policies served the file verbatim while /check also applied the
+    platform's rules, so a policy stating none was published as requiring
+    nothing while three conditions were being checked.
+
+    When policies gain a parent (#4), only this walks the chain — both callers
+    follow without changing.
+    """
+    return ([(rule, "platform") for rule in baseline_rules(policy)]
+            + [(rule, "policy") for rule in policy["rules"]])
+
+
 def load_policies(path):
     """Read the policy file, refusing to start on anything we cannot answer.
 
@@ -200,7 +216,12 @@ def policies():
     the rules it becomes. Anyone can check our reading of their own policy
     without running a single query.
     """
-    return jsonify(policies=POLICIES)
+    return jsonify(policies={
+        policy_id: {**policy,
+                    "rules": [{**rule, "source": origin}
+                              for rule, origin in resolve(policy)]}
+        for policy_id, policy in POLICIES.items()
+    })
 
 
 @app.get("/check")
@@ -232,11 +253,8 @@ def check():
         # queries answer "no edits" for a nonexistent account just as they do
         # for a new one, so without this a typo would read as a failed vote.
         lookup.account(policy["wiki"])
-        implied = baseline_rules(policy)
-        applied = [{**rules.apply(lookup, rule, moment), "source": "platform"}
-                   for rule in implied]
-        applied += [{**rules.apply(lookup, rule, moment), "source": "policy"}
-                    for rule in policy["rules"]]
+        applied = [{**rules.apply(lookup, rule, moment), "source": origin}
+                   for rule, origin in resolve(policy)]
     except mediawiki.UsernameInvalid:
         return jsonify(_verdict(username, policy_id, policy, [], lookup, moment,
                                 verdict="not_eligible",
