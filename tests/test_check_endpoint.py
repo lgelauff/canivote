@@ -47,7 +47,7 @@ def test_frwiki_has_no_rules_of_its_own_but_still_gets_the_global_rules(client, 
     use_fixture(monkeypatch, "frwiki-sondage")
     body = client.get("/check?user=ExampleUser&policy=frwiki-sondage").get_json()
     assert body["verdict"] == "eligible"
-    assert [c["source"] for c in body["criteria"]] == ["platform"] * 3
+    assert [c["source"] for c in body["criteria"]] == ["platform"] * 4
     assert not any(c["source"] == "policy" for c in body["criteria"])
 
 def test_nonexistent_account_makes_exactly_one_query(client, monkeypatch):

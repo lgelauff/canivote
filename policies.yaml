@@ -77,15 +77,28 @@ dewiki-stimmberechtigung:
     - https://de.wikipedia.org/wiki/Wikipedia:Stimmberechtigung
   verified: 2026-09-01
   original_text: >-
-    Der Benutzer ist angemeldet. Der Benutzer hat seit mindestens zwei Monaten
-    aktiv mitgearbeitet. Der Benutzer hat mindestens 200 Bearbeitungen (Edits)
-    im Artikelnamensraum vorgenommen, und davon mindestens 50 in den letzten
-    12 Monaten.
+    Allgemeine Stimmberechtigung: Der Benutzer ist angemeldet. Der Benutzer
+    hat seit mindestens zwei Monaten aktiv mitgearbeitet. Der Benutzer hat
+    mindestens 200 Bearbeitungen (Edits) im Artikelnamensraum vorgenommen,
+    und davon mindestens 50 in den letzten 12 Monaten.
+
+    Nicht stimmberechtigt, selbst wenn die oben genannten Vorgaben erfüllt
+    werden: gesperrte Benutzer — während einer Sperre dürfen Benutzer nicht
+    abstimmen. Stimmen von Bots werden gestrichen.
   english: >-
     You must be logged in, have been actively contributing for at least two
     months, and have made at least 200 edits in the article namespace, of which
-    at least 50 in the last twelve months.
+    at least 50 in the last twelve months. You must not be site-wide blocked,
+    and your account must not be a bot.
   rules:
+    - metric: is_blocked
+      wiki: de.wikipedia.org
+      operator: is
+      value: false
+    - metric: user_groups
+      wiki: de.wikipedia.org
+      operator: excludes
+      value: bot
     - metric: time_since_first_edit
       wiki: de.wikipedia.org
       operator: at_least
@@ -203,4 +216,5 @@ frwiki-sondage:
   notes: >-
     A deliberate empty case. French Wikipedia codifies no voter eligibility for
     surveys, and "no formal requirement" is a real answer rather than missing
-    data. Everyone passes.
+    data. A site-wide block bars a user from editing any page including the
+    vote, so the platform applies that check regardless.

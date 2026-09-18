@@ -40,7 +40,7 @@ def test_an_unknown_wiki_says_which_ones_exist():
 def test_the_detail_shows_the_rules_that_will_actually_run():
     """Including the platform's, so the listing cannot describe a smaller check."""
     body = _client().get("/policies/frwiki-sondage").get_json()
-    assert [r["source"] for r in body["rules"]] == ["platform"] * 3
+    assert [r["source"] for r in body["rules"]] == ["platform"] * 4
 
 
 def test_an_unknown_policy_says_which_ones_exist():
