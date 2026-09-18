@@ -18,16 +18,24 @@ nlwiki-stemprocedure:
     - https://nl.wikipedia.org/wiki/Wikipedia:Stemlokaal/Stemgerechtigde_gebruikers
   verified: 2026-09-01
   original_text: >-
-    hij of zij heeft (minstens) twee weken voor het begin van de stemming zijn
-    eerste bewerking gedaan als aangemelde gebruiker; hij of zij had meer dan
-    100 bewerkingen (geen vandalisme) gedaan voordat het stemvoorstel in het
-    stemlokaal (of subpagina daarvan) gezet werd (ingangstijd/datum van
-    stemvoorstel dient ter referentie).
+    Stemmen mag iedere gebruiker met bewerkingsrechten op de stempagina,
+    die voldoet aan de volgende twee voorwaarden: hij of zij heeft (minstens)
+    twee weken voor het begin van de stemming zijn eerste bewerking gedaan
+    als aangemelde gebruiker; hij of zij had meer dan 100 bewerkingen (geen
+    vandalisme) gedaan voordat het stemvoorstel in het stemlokaal (of
+    subpagina daarvan) gezet werd (ingangstijd/datum van stemvoorstel dient
+    ter referentie).
   english: >-
-    You must have made your first edit as a registered user at least two weeks
-    before the vote opened, and have made more than 100 edits before the
-    proposal was posted (the proposal's timestamp is the reference point).
+    You must hold editing rights on the voting page — that is, you must not
+    be site-wide blocked on Dutch Wikipedia. You must have made your first
+    edit as a registered user at least two weeks before the vote opened, and
+    have made more than 100 edits before the proposal was posted (the
+    proposal's timestamp is the reference point).
   rules:
+    - metric: is_blocked
+      wiki: nl.wikipedia.org
+      operator: is
+      value: false
     - metric: time_since_first_edit
       wiki: nl.wikipedia.org
       operator: at_least
