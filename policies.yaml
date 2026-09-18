@@ -216,4 +216,5 @@ frwiki-sondage:
   notes: >-
     A deliberate empty case. French Wikipedia codifies no voter eligibility for
     surveys, and "no formal requirement" is a real answer rather than missing
-    data. Everyone passes.
+    data. A site-wide block bars a user from editing any page including the
+    vote, so the platform applies that check regardless.
