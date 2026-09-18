@@ -69,23 +69,23 @@ GLOBAL_BASELINE = (
 def baseline_rules(policy):
     """The rules the software imposes on every check, whatever a policy says.
 
-    Only conditions that hold movement-wide belong here. A *local* block is one
-    community's sanction under its own blocking policy, and whether it also
-    removes a vote is that community's decision to write down — some say it
-    does, and WMF Board elections disqualify only an account blocked on more
-    than one project. Adding it here would impose one community's sanction on
-    policies that never asked for it.
+    A global lock stops an account editing anywhere at all; a global block does
+    the same across wikis. Additionally, a site-wide block on the policy's own
+    wiki means the user cannot edit a page to cast a vote — a platform-level bar
+    that applies unless a policy explicitly opts out with `baseline: false`.
+
+    A *local* block is one community's sanction under its own blocking policy, so
+    policies that state one explicitly keep their own version displayed as
+    `policy` alongside the platform rule, and the community's wording stays the
+    authority. No rule is checked twice.
     """
     if policy.get("baseline") is False:
         return []
-    # No attempt to suppress a rule a policy also states. Rules are ANDed and
-    # lookups are memoised, so a repeat costs no upstream request and cannot
-    # change a verdict — the only thing deduplication bought was a shorter
-    # list, and it bought that at the price of deciding when two rules are
-    # "the same", which is where it went wrong. If a community states a
-    # condition the software also imposes, the response shows both, one marked
-    # `policy` and one `platform`, which is the more honest reading anyway.
-    return [dict(rule) for rule in GLOBAL_BASELINE]
+    rules = [dict(rule) for rule in GLOBAL_BASELINE]
+    if policy.get("wiki"):
+        rules.append({"metric": "is_blocked", "wiki": policy["wiki"],
+                      "operator": "is", "value": False})
+    return rules
 
 
 def _parse_moment(text):

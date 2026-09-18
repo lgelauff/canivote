@@ -19,11 +19,17 @@ def _metrics(rules):
     return [rule["metric"] for rule in rules]
 
 
-def test_a_policy_that_states_a_rule_itself_does_not_get_it_twice():
-    """enwiki names its own is_blocked rule, so the baseline must stand down."""
+def test_a_policy_that_states_a_rule_itself_gets_it_identified_as_policy():
+    """enwiki names its own is_blocked rule, and the platform also applies it.
+    
+    Both show up — one as policy, one as platform — so the community's wording
+    stays the authority. Lookups are memoised so a repeat costs no extra request.
+    """
     policy = POLICIES["enwiki-arbcom"]
     assert "is_blocked" in _metrics(policy["rules"])          # the premise
-    assert "is_blocked" not in _metrics(baseline_rules(policy))
+    # The baseline now includes is_blocked for every policy with a wiki.
+    # The policy version stays visible alongside it.
+    assert "is_blocked" in _metrics(baseline_rules(policy))
 
 
 def test_a_policy_may_repeat_a_platform_rule_and_both_are_shown(tmp_path):
@@ -41,18 +47,18 @@ def test_a_policy_may_repeat_a_platform_rule_and_both_are_shown(tmp_path):
     implied = [r["metric"] for r in baseline_rules(policy)]
     assert "is_globally_locked" in implied, "the platform rule still applies"
 
-def test_a_local_block_is_not_a_platform_rule(tmp_path):
-    """A block on one wiki is that community's sanction, not the software's.
-
-    Whether it also removes a vote is for that community to write down — WMF
-    Board elections, for instance, disqualify only an account blocked on more
-    than one project. Imposing it by default would apply one community's
-    sanction to policies that never asked for it.
+def test_a_local_block_is_a_platform_rule():
+    """A site-wide block means the user cannot edit any page — including the vote.
+    
+    Unlike movement-wide conditions, this is scoped to the policy's own wiki.
+    A community that writes it explicitly keeps its own version shown as policy.
     """
     implied = baseline_rules({"wiki": "nl.wikipedia.org", "rules": []})
     assert [r["metric"] for r in implied] == [
-        "has_global_account", "is_globally_locked", "is_globally_blocked"]
-    assert not any(r["metric"] == "is_blocked" for r in implied)
+        "has_global_account", "is_globally_locked", "is_globally_blocked",
+        "is_blocked"]
+    assert any(r["metric"] == "is_blocked" and r["wiki"] == "nl.wikipedia.org"
+               for r in implied)
 
 
 def test_dedup_is_keyed_by_wiki_as_well_as_metric(tmp_path):
