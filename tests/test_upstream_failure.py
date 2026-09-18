@@ -84,7 +84,8 @@ def test_check_reports_502_and_blames_the_right_party(client, monkeypatch):
 def test_one_wiki_costs_one_account_query(monkeypatch):
     """The per-lookup cache is claimed in a docstring; this checks it.
 
-    enwiki's policy has five rules and four of them ask about the same account.
+    enwiki's policy has five rules and three of them ask about the same
+    account, plus the existence check before any rule runs.
     Without memoisation that is four identical requests to Wikimedia for one
     question, which is exactly the discourtesy this tool is careful about.
     """
@@ -99,3 +100,29 @@ def test_one_wiki_costs_one_account_query(monkeypatch):
     for _ in range(4):
         lookup.account("en.wikipedia.org")
     assert len(calls) == 1
+
+
+def test_the_account_cache_is_keyed_by_wiki(monkeypatch):
+    """Two wikis must not share one cached account.
+
+    Nothing today asks about two wikis in one check, so a cache that ignored
+    the wiki would go unnoticed — until a policy spanned two, and then every
+    rule about the second would silently read the first one's block status
+    and groups.
+    """
+    served = []
+
+    def fake_get(url, **kwargs):
+        served.append(url)
+        wiki = url.split("//")[1].split("/")[0]
+        return _Response({"query": {"users": [{"name": "ExampleUser",
+                                               "groups": [wiki], "blockid": None}]}})
+
+    monkeypatch.setattr(mediawiki._session, "get", fake_get)
+    lookup = mediawiki.Lookup("ExampleUser")
+    first = lookup.account("en.wikipedia.org")
+    second = lookup.account("de.wikipedia.org")
+
+    assert len(served) == 2, "each wiki needs its own request"
+    assert first["groups"] == ["en.wikipedia.org"]
+    assert second["groups"] == ["de.wikipedia.org"], "second wiki got the first's data"

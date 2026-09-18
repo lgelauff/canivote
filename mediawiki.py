@@ -3,13 +3,15 @@
 Every request is recorded as a full URL and returned with the verdict, so anyone
 can paste it into a browser and see exactly what this tool saw.
 
-Two design notes:
+Three design notes:
 
 * Counting stops at a cap. A policy only asks whether a threshold is met, so one
   request settles it and we never build a fuller picture of somebody than the
   question needs.
-* Results are cached per lookup, so a policy with several rules about one wiki
-  costs one request rather than one per rule.
+* Account and global-account lookups are cached per lookup, so several rules
+  asking about the same account cost one request rather than one per rule.
+  Contribution counts are not cached: two edit-count rules are two different
+  questions, and each needs its own query.
 * One session for the process, and `maxlag` on every call. We are a guest on
   shared infrastructure: reusing the connection and backing off when the
   replicas fall behind are the least we can do.
@@ -21,12 +23,13 @@ from urllib.parse import urlencode
 
 import requests
 
+# Defined here, the lowest module, and imported upward. It is the contact
+# address in USER_AGENT, which is how WMF reaches an operator.
+REPOSITORY = "https://github.com/lgelauff/canivote"
+
 # The contact URL has to reach a human. A repository has an issue tracker; the
 # tool's own front page would not, since it does not have one.
-USER_AGENT = (
-    "canivote/1.0 (https://github.com/lgelauff/canivote; "
-    "Wikimedia eligibility checker)"
-)
+USER_AGENT = f"canivote/1.0 ({REPOSITORY}; Wikimedia eligibility checker)"
 TIMEOUT_SECONDS = 10
 MAX_ROWS_PER_REQUEST = 500  # Action API ceiling for clients without apihighlimits
 MAX_LAG_SECONDS = 5         # standard Wikimedia etiquette: back off when replicas lag
@@ -97,20 +100,26 @@ class Lookup:
         return self._accounts[wiki]
 
     def global_account(self):
-        """CentralAuth facts, including whether the account is globally locked."""
+        """CentralAuth facts, or an empty record if the account has none.
+
+        An account with no CentralAuth entry is not an account that does not
+        exist — it is one whose local existence we have usually already
+        confirmed. A lock is a CentralAuth attribute, so no record means no lock
+        can be in force, and the honest answer is "not locked". Raising here
+        would refuse a real person on every policy, since the platform rules
+        ask this of every check.
+        """
         if self._global is None:
             data = self._get("meta.wikimedia.org", {
                 "action": "query", "meta": "globaluserinfo",
                 "guiuser": self.username,
             })
             info = data["query"]["globaluserinfo"]
-            if "missing" in info:
-                raise UserNotFound(self.username)
-            self._global = info
+            self._global = {} if "missing" in info else info
         return self._global
 
     def globally_blocked(self):
-        """Whether stewards have placed a global block on this account."""
+        """Whether a global block applies to this account."""
         data = self._get("meta.wikimedia.org", {
             "action": "query", "list": "globalblocks",
             "bgtargets": self.username, "bglimit": "1",

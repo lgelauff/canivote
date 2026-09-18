@@ -10,6 +10,7 @@ from app import RATE_LIMIT
 
 def test_429_makes_no_upstream_call_and_sends_retry_after(client, monkeypatch):
     calls = use_fixture(monkeypatch, "frwiki-sondage")
+    calls_per_check = 3
     limit = int(RATE_LIMIT.split()[0])  # "60 per minute" -> 60
 
     statuses = []
@@ -32,4 +33,6 @@ def test_429_makes_no_upstream_call_and_sends_retry_after(client, monkeypatch):
     # The point of the test: every allowed request cost one upstream call, and
     # the refused ones cost none. A limiter that calls Wikimedia before saying
     # no has not solved the amplification problem it exists for.
-    assert len(calls) == limit
+    # One check now costs several upstream calls — the platform baseline added
+    # two to every policy. What matters is that the refused ones cost nothing.
+    assert len(calls) == limit * calls_per_check

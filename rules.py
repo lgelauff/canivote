@@ -8,7 +8,13 @@ judgement about what a community meant, which lives in the policy's own words.
 
 from datetime import timedelta
 
-from metrics import AtLeast, NotMeasurable, describe_span, measure
+import logging
+
+from mediawiki import UpstreamUnavailable
+from metrics import (Absent, AtLeast, NotMeasurable, describe_span,
+                     measure)
+
+LOG = logging.getLogger(__name__)
 
 UNITS = {
     "days": 1,
@@ -45,12 +51,11 @@ def as_duration(value):
 
 
 def _machine(value):
-    """The same value as JSON a consumer can compute with.
+    """The same value as JSON, for a consumer to compute with.
 
-    The English rendering is for people; this is so wiki-polis can say "you
-    need 43 more edits" and a translator can put it in another language.
-    Durations become whole days, which is the coarsest unit every policy here
-    is written in.
+    Durations truncate to whole days: months and years are already approximated,
+    so a finer unit would imply precision the input never had. The comparison
+    runs on full-precision timedeltas; only this rendering truncates.
     """
     if isinstance(value, timedelta):
         return value.days
@@ -76,6 +81,38 @@ def _readable(value):
     if isinstance(value, int):
         return f"{value:,}"
     return str(value)
+
+
+def apply_safely(lookup, rule, moment):
+    """Evaluate one rule, surviving a defect in that rule.
+
+    A broken rule is our bug, not a reason to lose the whole verdict — the
+    other rules were answered honestly and a reader is entitled to them. It is
+    reported in place, neither passed nor failed, and the verdict cannot come
+    out eligible while one of its conditions is unknown.
+
+    Upstream failure is deliberately not caught here: if Wikimedia cannot be
+    reached, every remaining rule is unanswerable too, and a mostly-empty
+    verdict would look more complete than it is.
+    """
+    try:
+        return apply(lookup, rule, moment)
+    except UpstreamUnavailable:
+        raise
+    except Exception as defect:
+        LOG.exception("rule %s (%s) failed to evaluate",
+                      rule.get("metric"), rule.get("wiki", "global"))
+        return {
+            "metric": rule.get("metric"),
+            "label": rule.get("metric"),
+            "scope": rule.get("wiki", "global"),
+            "operator": OPERATORS.get(rule.get("operator"), (None, "?"))[1],
+            "required": {"value": _machine(rule.get("value")),
+                         "display": _readable(rule.get("value"))},
+            "observed": None,
+            "passed": None,
+            "broken": f"{type(defect).__name__}: {defect}",
+        }
 
 
 def apply(lookup, rule, moment):
@@ -117,12 +154,25 @@ def apply(lookup, rule, moment):
 
     try:
         seen, label = measure(lookup, rule["metric"], as_of, **parameters)
+    except Absent as nothing:
+        # Nothing to measure, and that answers the question: no first edit
+        # cannot be a first edit long enough ago. A definite failure, with the
+        # absence itself as the observation.
+        return {
+            "metric": rule["metric"],
+            "label": nothing.label or rule["metric"],
+            "scope": scope,
+            "operator": phrase,
+            "required": {"value": _machine(threshold), "display": _readable(threshold)},
+            "observed": {"value": None, "display": str(nothing)},
+            "passed": False,
+        }
     except NotMeasurable as gap:
         # Neither pass nor fail: a rule we cannot evaluate must not be scored as
         # though we had, in either direction.
         return {
             "metric": rule["metric"],
-            "label": rule["metric"],
+            "label": gap.label or rule["metric"],
             "scope": scope,
             "operator": phrase,
             "required": {"value": _machine(threshold), "display": _readable(threshold)},
@@ -139,6 +189,13 @@ def apply(lookup, rule, moment):
         return _readable(value)
 
     observed = {"value": _machine(seen), "display": shown(seen)}
+    required_display = shown(threshold)
+    # A criterion is a requirement, not a property. Naming a boolean rule after
+    # the thing looked for reads backwards — "globally locked ... passed" makes
+    # a reader invert it. Name it after what must hold. Computed after the
+    # displays above, which are built from the property name.
+    if isinstance(threshold, bool):
+        label = required_display
     # `bounded` only means something for a count we deliberately stopped taking.
     # On a boolean or a duration it is noise that reads like a missing feature.
     if isinstance(seen, int) and not isinstance(seen, bool):
@@ -151,7 +208,7 @@ def apply(lookup, rule, moment):
         "label": label,
         "scope": scope,
         "operator": phrase,
-        "required": {"value": _machine(threshold), "display": shown(threshold)},
+        "required": {"value": _machine(threshold), "display": required_display},
         "observed": observed,
         "passed": bool(compare(seen, threshold)),
     }

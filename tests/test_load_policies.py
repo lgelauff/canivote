@@ -48,8 +48,8 @@ def test_a_threshold_past_the_api_ceiling_is_refused(tmp_path, operator, value, 
 
     Past that we would compare against a number we never finished counting,
     fail every voter, and report "at least 500" while doing it. Refused at
-    startup instead — enwiki extended-confirmed is 500 edits and steward
-    elections want 600, so this is a policy someone will realistically add.
+    startup instead — thresholds at or above 500 are used in real Wikimedia
+    processes, so this is a policy someone will realistically add.
     """
     rule = {"metric": "edit_count", "wiki": "nl.wikipedia.org",
             "operator": operator, "value": value}
