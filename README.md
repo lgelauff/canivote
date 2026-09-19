@@ -12,6 +12,9 @@ that project's operational patterns.
 
 ## The `/check` contract
 
+The full machine-readable contract for every endpoint is [`openapi.json`](openapi.json),
+served at `/openapi.json` (OpenAPI 3.1). What follows is its `/check` in prose.
+
 ```
 GET /check?user=<name>&policy=<policy id>
 ```

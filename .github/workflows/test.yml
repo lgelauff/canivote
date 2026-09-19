@@ -14,7 +14,7 @@ jobs:
         with:
           python-version: "3.13"
 
-      - run: pip install -r requirements.txt pytest ruff
+      - run: pip install -r requirements.txt pytest ruff jsonschema
 
       - run: ruff check .
 

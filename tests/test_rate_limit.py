@@ -4,6 +4,7 @@ A client that gets rate-limited must cost Wikimedia nothing.
 """
 
 from tests.conftest import use_fixture
+from tests.openapi_contract import validate
 
 from app import RATE_LIMIT
 
@@ -29,6 +30,11 @@ def test_429_makes_no_upstream_call_and_sends_retry_after(client, monkeypatch):
     # sends no Retry-After at all.
     assert "Retry-After" in first_429.headers
     assert int(first_429.headers["Retry-After"]) > 0
+
+    # And a refusal must be the same shape as every other error, so a consumer
+    # has one error path rather than two.
+    validate("Error", first_429.get_json())
+    assert first_429.get_json()["code"] == "rate_limited"
 
     # The point of the test: every allowed request cost one upstream call, and
     # the refused ones cost none. A limiter that calls Wikimedia before saying
