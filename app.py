@@ -23,6 +23,7 @@ this file is as careful about what it sends upstream as about what it answers.
 """
 
 import inspect
+import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,6 +37,15 @@ import metrics
 import rules
 from mediawiki import REPOSITORY
 from metrics import UnknownMetric
+
+# The one place the API version is written down. It is echoed on `/`, on every
+# response as `Canivote-Version`, and in openapi.json's `info.version`; a test
+# asserts the three agree, so they cannot drift apart.
+VERSION = "1.0.0"
+
+# The machine-readable contract, served verbatim at `/openapi.json` and
+# validated against live responses by tests/test_openapi_contract.py.
+OPENAPI = json.loads(Path(__file__).with_name("openapi.json").read_text())
 
 # Wikimedia's gateway gives a compliant, unauthenticated User-Agent roughly
 # 200 requests a minute. One check costs up to six upstream calls, so the
@@ -206,12 +216,20 @@ def _headers(response):
     # A public, read-only GET API: allowing cross-origin reads costs nothing and
     # means an on-wiki gadget can use this without waiting for a redeploy.
     response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Canivote-Version"] = VERSION
     if request.path == "/check":
         # Every /check URL is a fan-out to Wikimedia. Search engines following
         # them from a wiki page would amplify far past any one client, and a
         # per-IP limit does nothing about a distributed crawl.
         response.headers["X-Robots-Tag"] = "noindex, nofollow"
     return response
+
+
+@app.errorhandler(429)
+def _rate_limited(_error):
+    """Return the same error shape as every other failure, not the limiter's."""
+    return jsonify(error="Too many requests. Retry later.",
+                   code="rate_limited"), 429
 
 
 @app.get("/robots.txt")
@@ -225,10 +243,12 @@ def index():
         name="canivote",
         description="Does a Wikimedia account meet a community's voting-eligibility policy?",
         repository=REPOSITORY,
+        version=VERSION,
         endpoints={
             "/check": "?user=<name>&policy=<id>",
             "/policies": "every policy and the rules a person wrote from it",
             "/health": "uptime check",
+            "/openapi.json": "this API's OpenAPI 3.1 contract",
         },
     )
 
@@ -236,6 +256,12 @@ def index():
 @app.get("/health")
 def health():
     return jsonify(status="ok", policies=len(POLICIES))
+
+
+@app.get("/openapi.json")
+def openapi_document():
+    """The machine-readable contract every endpoint here is held to."""
+    return jsonify(OPENAPI)
 
 
 @app.get("/policies")
@@ -251,6 +277,7 @@ def policies():
     known_wikis = sorted({p["wiki"] for p in POLICIES.values() if p.get("wiki")})
     if wanted and wanted not in known_wikis:
         return jsonify(error=f"No policies for '{wanted}'.",
+                       code="unknown_wiki",
                        known_wikis=known_wikis), 404
 
     chosen = {policy_id: policy for policy_id, policy in POLICIES.items()
@@ -279,6 +306,7 @@ def policy_detail(policy_id):
     policy = POLICIES.get(policy_id)
     if policy is None:
         return jsonify(error=f"Unknown policy '{policy_id}'.",
+                       code="unknown_policy",
                        known_policies=sorted(POLICIES)), 404
     return jsonify({**policy,
                     "id": policy_id,
@@ -292,17 +320,14 @@ def policy_detail(policy_id):
 def check():
     """Check one user against one policy."""
     raw_user = request.args.get("user") or ""
-    # `event` is what wiki-polis's deployed client sends (v2/app.py:1547). It
-    # was removed once on the grounds that no consumer existed; the consumer
-    # existed and was in production, and only the URL pointing at us was
-    # missing. Accepting both costs one line and cannot break on a name.
-    policy_id = (request.args.get("policy")
-                 or request.args.get("event") or "").strip()
+    policy_id = (request.args.get("policy") or "").strip()
 
     if not raw_user.strip() or not policy_id:
-        return jsonify(error="Provide both 'user' and 'policy'."), 400
+        return jsonify(error="Provide both 'user' and 'policy'.",
+                       code="bad_request"), 400
     if policy_id not in POLICIES:
         return jsonify(error=f"Unknown policy '{policy_id}'.",
+                       code="unknown_policy",
                        known_policies=sorted(POLICIES)), 404
 
     # Normalise and validate before anything leaves the building: junk should
@@ -310,7 +335,8 @@ def check():
     try:
         username = mediawiki.normalise_username(raw_user)
     except mediawiki.UsernameInvalid:
-        return jsonify(error="That is not a valid username."), 400
+        return jsonify(error="That is not a valid username.",
+                       code="invalid_username"), 400
 
     policy = POLICIES[policy_id]
     now = datetime.now(timezone.utc)
@@ -325,7 +351,8 @@ def check():
             moment = _parse_moment(requested)
         except ValueError:
             return jsonify(error="'as_of' must be an ISO 8601 timestamp, "
-                                 "for example 2026-11-01T00:00:00Z"), 400
+                                 "for example 2026-11-01T00:00:00Z",
+                           code="bad_request"), 400
         if moment.tzinfo is None:
             moment = moment.replace(tzinfo=timezone.utc)
     else:
@@ -350,9 +377,11 @@ def check():
         # Their outage, not ours, and not the user's fault either. Say so
         # plainly rather than returning a verdict we did not actually reach.
         return jsonify(error="The Wikimedia API could not be reached.",
+                       code="upstream_unavailable",
                        detail=str(outage)), 502
     except (UnknownMetric, rules.UnknownOperator) as broken:
-        return jsonify(error=f"Policy '{policy_id}' is not valid: {broken}"), 500
+        return jsonify(error=f"Policy '{policy_id}' is not valid: {broken}",
+                       code="invalid_policy"), 500
 
     failed = [rule for rule in applied if rule["passed"] is False]
     unknown = [rule for rule in applied if rule["passed"] is None]

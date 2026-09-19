@@ -1,0 +1,340 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "canivote",
+    "version": "1.0.0",
+    "description": "Does a Wikimedia account meet a community's voting-eligibility policy? Answers over HTTP with the community's own wording, an English rendering, per-rule pass/fail, and the exact API queries used, so anyone can reproduce the verdict by hand. No login, no accounts, read-only GET.",
+    "license": {"name": "MIT"},
+    "contact": {
+      "name": "canivote",
+      "url": "https://github.com/lgelauff/canivote"
+    }
+  },
+  "servers": [{"url": "https://canivote.toolforge.org"}],
+  "paths": {
+    "/check": {
+      "get": {
+        "operationId": "check",
+        "summary": "Check one Wikimedia account against one policy",
+        "description": "Runs every rule of the named policy and returns the verdict plus the evidence. A username that does not exist is a `200` `not_eligible` verdict with an empty `criteria` list, not a `404`.",
+        "parameters": [
+          {
+            "name": "user",
+            "in": "query",
+            "required": true,
+            "description": "Wikimedia username. Normalised and validated before any upstream call.",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "policy",
+            "in": "query",
+            "required": true,
+            "description": "Policy id, as published by `GET /policies`.",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "description": "The moment the policy anchors on, ISO 8601. Defaults to now. Callers that know the vote's reference date should send it; omitting it answers a different question.",
+            "schema": {"type": "string", "format": "date-time"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A verdict, whether eligible, not eligible, or indeterminate.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Verdict"}}}
+          },
+          "400": {
+            "description": "Missing `user`/`policy`, an invalid username, or a malformed `as_of`.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+          },
+          "404": {
+            "description": "The policy id is not known.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+          },
+          "429": {
+            "description": "Rate limited. Retry later.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+          },
+          "500": {
+            "description": "A policy in the file is not valid (a bug here, not the caller's).",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+          },
+          "502": {
+            "description": "Wikimedia could not be reached, so no verdict was reached.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+          }
+        }
+      }
+    },
+    "/policies": {
+      "get": {
+        "operationId": "listPolicies",
+        "summary": "What there is to choose from",
+        "parameters": [
+          {
+            "name": "wiki",
+            "in": "query",
+            "required": false,
+            "description": "Narrow to one project, e.g. `de.wikipedia.org`.",
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every known policy, or those for one wiki.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PolicyList"}}}
+          },
+          "404": {
+            "description": "No policies are known for the requested wiki.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+          }
+        }
+      }
+    },
+    "/policies/{policy_id}": {
+      "get": {
+        "operationId": "getPolicy",
+        "summary": "One policy in full, and the rules it becomes",
+        "parameters": [
+          {
+            "name": "policy_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The policy with its community wording and every rule it resolves to, each tagged by origin.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PolicyDetail"}}}
+          },
+          "404": {
+            "description": "Unknown policy.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health",
+        "summary": "Uptime check",
+        "responses": {
+          "200": {
+            "description": "The service is up.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Health"}}}
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "operationId": "index",
+        "summary": "What this is and where to report problems",
+        "responses": {
+          "200": {
+            "description": "Service metadata and the endpoint map.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Index"}}}
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Verdict": {
+        "type": "object",
+        "required": ["verdict", "user", "policy", "reason", "checked_at", "as_of", "criteria", "policy_text", "queries"],
+        "additionalProperties": false,
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": ["eligible", "not_eligible", "indeterminate"],
+            "description": "The machine answer. `indeterminate` means no rule failed but at least one could not be measured."
+          },
+          "user": {"type": "string"},
+          "policy": {"type": "string"},
+          "reason": {"type": "string", "description": "English prose for a reader; not stable."},
+          "checked_at": {"type": "string", "format": "date-time", "description": "When this verdict was produced."},
+          "as_of": {"type": "string", "format": "date-time", "description": "The moment the policy was evaluated against."},
+          "criteria": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/Criterion"},
+            "description": "One entry per rule, in policy order. Empty when the account does not exist."
+          },
+          "policy_text": {"$ref": "#/components/schemas/PolicyText"},
+          "queries": {
+            "type": "array",
+            "items": {"type": "string", "format": "uri"},
+            "description": "The exact Wikimedia API calls made, so the verdict can be reproduced."
+          },
+          "not_checked": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Clauses of the policy that are human judgements and are never checked."
+          }
+        }
+      },
+      "Criterion": {
+        "type": "object",
+        "required": ["metric", "label", "scope", "operator", "required", "observed", "passed", "source"],
+        "additionalProperties": false,
+        "properties": {
+          "metric": {"type": "string", "description": "Bare identifier. Switch on this; it is stable."},
+          "label": {"type": "string", "description": "The metric with its parameters applied, in English prose. Show this; it is not stable."},
+          "scope": {"type": "string", "description": "Where the measurement applies: a wiki hostname, or `global`."},
+          "operator": {"type": "string", "description": "English rendering of the comparison, e.g. `at least`."},
+          "required": {"$ref": "#/components/schemas/Requirement"},
+          "observed": {
+            "oneOf": [{"$ref": "#/components/schemas/Requirement"}, {"type": "null"}],
+            "description": "What was measured. `null` when the rule could not be measured."
+          },
+          "passed": {
+            "type": ["boolean", "null"],
+            "description": "The authoritative machine result: `true`, `false`, or `null` when not measurable."
+          },
+          "source": {
+            "type": "string",
+            "enum": ["platform", "policy"],
+            "description": "`platform` for a condition Wikimedia imposes whoever is asking; `policy` for something the community wrote."
+          },
+          "measured": {"type": "string", "description": "Present when the rule anchors on an offset moment, e.g. `as of 12 months earlier`."},
+          "unmeasurable": {"type": "string", "description": "Present when `passed` is null because a metric could not be read."},
+          "broken": {"type": "string", "description": "Present when this rule raised internally (a bug here); diagnostic only."}
+        }
+      },
+      "Requirement": {
+        "type": "object",
+        "required": ["value", "display"],
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "type": ["boolean", "integer", "string", "array", "null"],
+            "description": "The machine-stable threshold or observation. Its type depends on the metric: a boolean for a state, an integer for a count or a duration in whole days, a string or a list for a set such as user groups, null when nothing was observed."
+          },
+          "display": {"type": "string", "description": "English prose for a reader; not stable."},
+          "bounded": {
+            "type": "boolean",
+            "description": "Only on an observed count that was deliberately capped, so it is a floor, not an exact count."
+          }
+        }
+      },
+      "PolicyText": {
+        "type": "object",
+        "required": ["language", "original", "english", "sources", "verified"],
+        "additionalProperties": false,
+        "properties": {
+          "language": {"type": "string"},
+          "original": {"type": "string", "description": "The community's own wording."},
+          "english": {"type": "string", "description": "An English rendering, not the authority."},
+          "sources": {"type": "array", "items": {"type": "string", "format": "uri"}},
+          "verified": {"type": "string", "description": "When a person last read the policy page."},
+          "notes": {"type": "string"}
+        }
+      },
+      "PolicySummary": {
+        "type": "object",
+        "required": ["id", "title", "wiki", "scope", "verified", "rule_count", "detail"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string"},
+          "title": {"type": ["string", "null"]},
+          "wiki": {"type": ["string", "null"]},
+          "scope": {"type": ["string", "null"]},
+          "verified": {"type": "string"},
+          "rule_count": {"type": "integer", "minimum": 0},
+          "detail": {"type": "string", "description": "Path to the policy's detail endpoint."}
+        }
+      },
+      "PolicyList": {
+        "type": "object",
+        "required": ["wikis", "policies"],
+        "additionalProperties": false,
+        "properties": {
+          "wikis": {"type": "array", "items": {"type": "string"}},
+          "policies": {"type": "array", "items": {"$ref": "#/components/schemas/PolicySummary"}}
+        }
+      },
+      "PolicyDetail": {
+        "type": "object",
+        "required": ["id", "title", "wiki", "language", "original_text", "english", "sources", "verified", "rules"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string"},
+          "title": {"type": "string"},
+          "wiki": {"type": "string"},
+          "language": {"type": "string"},
+          "scope": {"type": "string"},
+          "sources": {"type": "array", "items": {"type": "string", "format": "uri"}},
+          "verified": {"type": "string"},
+          "original_text": {"type": "string"},
+          "english": {"type": "string"},
+          "baseline": {"type": "boolean"},
+          "notes": {"type": "string"},
+          "not_modelled": {"type": "array", "items": {"type": "string"}},
+          "rules": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/PolicyRule"},
+            "description": "Every rule that would be evaluated, tagged by origin."
+          }
+        }
+      },
+      "PolicyRule": {
+        "type": "object",
+        "required": ["metric", "operator", "value", "source"],
+        "additionalProperties": true,
+        "properties": {
+          "metric": {"type": "string"},
+          "wiki": {"type": "string"},
+          "operator": {"type": "string"},
+          "value": {"type": ["boolean", "integer", "number", "string", "array", "object", "null"]},
+          "offset": {"type": "string"},
+          "within": {"type": "string"},
+          "source": {"type": "string", "description": "The layer that imposed the rule: `platform` or `policy`."}
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "additionalProperties": false,
+        "properties": {
+          "error": {"type": "string", "description": "Human-readable message; not stable."},
+          "code": {
+            "type": "string",
+            "enum": ["bad_request", "invalid_username", "unknown_policy", "unknown_wiki", "upstream_unavailable", "invalid_policy", "rate_limited"],
+            "description": "Stable machine discriminator. Prefer this over the HTTP status or the message."
+          },
+          "known_policies": {"type": "array", "items": {"type": "string"}},
+          "known_wikis": {"type": "array", "items": {"type": "string"}},
+          "detail": {"type": "string"}
+        }
+      },
+      "Health": {
+        "type": "object",
+        "required": ["status", "policies"],
+        "additionalProperties": false,
+        "properties": {
+          "status": {"type": "string", "const": "ok"},
+          "policies": {"type": "integer", "minimum": 0}
+        }
+      },
+      "Index": {
+        "type": "object",
+        "required": ["name", "description", "repository", "version", "endpoints"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {"type": "string", "const": "canivote"},
+          "description": {"type": "string"},
+          "repository": {"type": "string", "format": "uri"},
+          "version": {"type": "string"},
+          "endpoints": {
+            "type": "object",
+            "additionalProperties": {"type": "string"}
+          }
+        }
+      }
+    }
+  }
+}
