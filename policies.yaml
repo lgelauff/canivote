@@ -15,7 +15,6 @@ nlwiki-stemprocedure:
   scope: All votes (stemmingen) held under the Stemprocedure
   sources:
     - https://nl.wikipedia.org/wiki/Wikipedia:Stemprocedure
-    - https://nl.wikipedia.org/wiki/Wikipedia:Stemlokaal/Stemgerechtigde_gebruikers
   verified: 2026-09-01
   original_text: >-
     Stemmen mag iedere gebruiker met bewerkingsrechten op de stempagina,
