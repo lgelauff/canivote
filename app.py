@@ -41,7 +41,7 @@ from metrics import UnknownMetric
 # The one place the API version is written down. It is echoed on `/`, on every
 # response as `Canivote-Version`, and in openapi.json's `info.version`; a test
 # asserts the three agree, so they cannot drift apart.
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 # The machine-readable contract, served verbatim at `/openapi.json` and
 # validated against live responses by tests/test_openapi_contract.py.
@@ -144,46 +144,84 @@ def load_policies(path):
             if not str(source).startswith(("https://", "http://")):
                 raise ValueError(f"policy '{policy_id}': source {source!r} is not a URL")
         for rule in policy["rules"]:
-            # A typo in a metric or operator name would otherwise load fine and
-            # 500 at request time. This file is meant to be edited by someone
-            # who does not read Python, so it fails here instead, by name.
-            if rule["metric"] not in metrics.METRICS:
-                raise ValueError(
-                    f"policy '{policy_id}': unknown metric {rule['metric']!r}. "
-                    f"Known: {', '.join(sorted(metrics.METRICS))}"
-                )
-            if rule["operator"] not in rules.OPERATORS:
-                raise ValueError(
-                    f"policy '{policy_id}': unknown operator {rule['operator']!r}. "
-                    f"Known: {', '.join(sorted(rules.OPERATORS))}"
-                )
-            # Names are not enough: a metric that takes no wiki, given one,
-            # or one that requires a wiki, given none, both load fine and then
-            # raise TypeError at request time as a 500. Bind the parameters
-            # here so the mistake is named at startup instead.
-            given = {key: value for key, value in rule.items()
-                     if key not in ("metric", "operator", "value", "offset")}
-            try:
-                inspect.signature(metrics.METRICS[rule["metric"]]).bind(
-                    None, None, **given)
-            except TypeError as mismatch:
-                raise ValueError(
-                    f"policy '{policy_id}': rule {rule['metric']!r} — {mismatch}"
-                ) from None
-            if rule["metric"] != "edit_count":
-                continue
-            # We settle a count by asking for one row per edit up to the
-            # threshold, and the API will not return more than 500. Above that
-            # we would compare against a number we never finished counting and
-            # fail every voter while reporting "at least 500".
-            needed = rule["value"] + (1 if rule["operator"] in rules.NEEDS_ONE_MORE_THAN_THRESHOLD else 0)
-            if needed > mediawiki.MAX_ROWS_PER_REQUEST:
-                raise ValueError(
-                    f"policy '{policy_id}': a threshold of {rule['value']} needs "
-                    f"{needed} rows, past the API's {mediawiki.MAX_ROWS_PER_REQUEST}. "
-                    f"Counting that far needs a different data source."
-                )
+            _check_rule(policy_id, rule)
     return policies
+
+
+def _check_rule(policy_id, rule):
+    """Refuse one rule, or one group and everything in it, that cannot be answered."""
+    if not isinstance(rule, dict):
+        raise ValueError(f"policy '{policy_id}': {rule!r} is not a rule")
+    named = [kind for kind in rules.GROUPS if kind in rule]
+    if named:
+        # A group is its one keyword and its members. Anything beside them —
+        # a metric, a second keyword — means the author meant something we
+        # would otherwise silently ignore.
+        if len(rule) != 1:
+            raise ValueError(
+                f"policy '{policy_id}': a group holds only '{named[0]}' and its "
+                f"list of rules, but this one also has "
+                f"{', '.join(sorted(set(rule) - {named[0]}))}"
+            )
+        kind = named[0]
+        members = rule[kind]
+        if not isinstance(members, list) or len(members) < 2:
+            raise ValueError(
+                f"policy '{policy_id}': '{kind}' needs a list of at least two rules; "
+                f"with one, write that rule on its own"
+            )
+        for member in members:
+            _check_rule(policy_id, member)
+        return
+    if "metric" not in rule:
+        raise ValueError(
+            f"policy '{policy_id}': {rule!r} has no 'metric', and is not a group "
+            f"({' or '.join(rules.GROUPS)})"
+        )
+    # A typo in a metric or operator name would otherwise load fine and
+    # 500 at request time. This file is meant to be edited by someone
+    # who does not read Python, so it fails here instead, by name.
+    if rule["metric"] not in metrics.METRICS:
+        raise ValueError(
+            f"policy '{policy_id}': unknown metric {rule['metric']!r}. "
+            f"Known: {', '.join(sorted(metrics.METRICS))}"
+        )
+    if rule.get("operator") not in rules.OPERATORS:
+        raise ValueError(
+            f"policy '{policy_id}': unknown operator {rule.get('operator')!r}. "
+            f"Known: {', '.join(sorted(rules.OPERATORS))}"
+        )
+    # Names are not enough: a metric that takes no wiki, given one,
+    # or one that requires a wiki, given none, both load fine and then
+    # raise TypeError at request time as a 500. Bind the parameters
+    # here so the mistake is named at startup instead.
+    given = {key: value for key, value in rule.items()
+             if key not in ("metric", "operator", "value", "offset")}
+    try:
+        inspect.signature(metrics.METRICS[rule["metric"]]).bind(
+            None, None, **given)
+    except TypeError as mismatch:
+        raise ValueError(
+            f"policy '{policy_id}': rule {rule['metric']!r} — {mismatch}"
+        ) from None
+    if rule["metric"] != "edit_count":
+        return
+    if "namespace" in rule:
+        try:
+            metrics.namespace_parameter(rule["namespace"])
+        except ValueError as wrong:
+            raise ValueError(f"policy '{policy_id}': {wrong}") from None
+    # We settle a count by asking for one row per edit up to the
+    # threshold, and the API will not return more than 500. Above that
+    # we would compare against a number we never finished counting and
+    # fail every voter while reporting "at least 500".
+    needed = rule["value"] + (1 if rule["operator"] in rules.NEEDS_ONE_MORE_THAN_THRESHOLD else 0)
+    if needed > mediawiki.MAX_ROWS_PER_REQUEST:
+        raise ValueError(
+            f"policy '{policy_id}': a threshold of {rule['value']} needs "
+            f"{needed} rows, past the API's {mediawiki.MAX_ROWS_PER_REQUEST}. "
+            f"Counting that far needs a different data source."
+        )
 
 
 POLICIES = load_policies(Path(__file__).parent / "policies.yaml")
@@ -364,7 +402,7 @@ def check():
         # queries answer "no edits" for a nonexistent account just as they do
         # for a new one, so without this a typo would read as a failed vote.
         lookup.account(policy["wiki"])
-        applied = [{**rules.apply_safely(lookup, rule, moment), "source": origin}
+        applied = [rules.tag(rules.evaluate(lookup, rule, moment), origin)
                    for rule, origin in resolve(policy)]
     except mediawiki.UsernameInvalid:
         return jsonify(_verdict(username, policy_id, policy, [], lookup, moment,

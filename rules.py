@@ -4,6 +4,10 @@ A rule is a mathematical statement about a measured quantity, and nothing more.
 It carries no wiki-specific knowledge — that lives in metrics.py — and no
 judgement about what a community meant, which lives in the policy's own words.
 
+Rules can be grouped. A policy's top-level rules must all hold; `any_of` says at
+least one of its members must hold, and `all_of` groups members that must hold
+together, so a policy can write "patroller, or 500 edits and three months".
+
 """
 
 from datetime import timedelta
@@ -28,6 +32,10 @@ UNITS = {
 # 200 rows; "exactly 200" needs 201, because 200 rows cannot tell 200 from 900.
 NEEDS_ONE_MORE_THAN_THRESHOLD = {"more_than", "at_most", "is"}
 
+# Metrics measured as a span of time. Their threshold is a duration, written
+# either as {amount, unit} or as a plain number of days.
+DURATION_METRICS = {"time_since_first_edit", "time_since_registration"}
+
 OPERATORS = {
     "at_least": (lambda seen, want: seen >= want, "at least"),
     "more_than": (lambda seen, want: seen > want, "more than"),
@@ -41,6 +49,68 @@ OPERATORS = {
 
 class UnknownOperator(Exception):
     """A rule uses a comparison this tool does not know."""
+
+
+# The two ways of combining rules, and how each reads to a person.
+GROUPS = {
+    "any_of": "at least one of these",
+    "all_of": "all of these",
+}
+
+
+def group_kind(rule):
+    """'any_of' or 'all_of' if this rule is a group, None for a plain rule."""
+    kinds = [kind for kind in GROUPS if kind in rule]
+    return kinds[0] if len(kinds) == 1 else None
+
+
+def combine(kind, results):
+    """Combine members' results, each True, False or None, into the group's.
+
+    None means "could not be checked", and it is never quietly read as a pass
+    or a fail. An `any_of` holds as soon as one member holds — what the others
+    would have said does not matter. It fails only when every member fails.
+    Anything else is unknown. `all_of` is the mirror image.
+    """
+    if kind == "any_of":
+        if any(result is True for result in results):
+            return True
+        if all(result is False for result in results):
+            return False
+        return None
+    if any(result is False for result in results):
+        return False
+    if all(result is True for result in results):
+        return True
+    return None
+
+
+def evaluate(lookup, rule, moment):
+    """Evaluate a plain rule or a group of them.
+
+    Every member of a group is evaluated, even once the group's answer is
+    settled, so the response shows each route and a reader can see which one
+    they qualified by. Account lookups are memoised, so members asking about
+    the same account cost nothing extra; each count is still its own query.
+    """
+    kind = group_kind(rule)
+    if kind is None:
+        return apply_safely(lookup, rule, moment)
+    members = [evaluate(lookup, member, moment) for member in rule[kind]]
+    return {
+        "group": kind,
+        "label": GROUPS[kind],
+        "passed": combine(kind, [member["passed"] for member in members]),
+        "criteria": members,
+    }
+
+
+def tag(result, source):
+    """Mark a result, and every member of a group, with where it came from."""
+    tagged = {**result, "source": source}
+    if "criteria" in result:
+        tagged["criteria"] = [tag(member, source) for member in result["criteria"]]
+    return tagged
 
 
 def as_duration(value):
@@ -143,8 +213,10 @@ def apply(lookup, rule, moment):
         parameters["within"] = as_duration(parameters["within"])
 
     # A threshold written as {amount, unit} is a duration and has to become a
-    # timedelta before it can be compared with one.
-    if isinstance(threshold, dict):
+    # timedelta before it can be compared with one. So does a plain number on
+    # a time metric: the README promises that a bare integer means days, and
+    # comparing it raw against a timedelta raised TypeError instead.
+    if isinstance(threshold, dict) or rule["metric"] in DURATION_METRICS:
         threshold = as_duration(threshold)
     # A count threshold doubles as the cap, so counting can stop once it is met.
     if rule["metric"] == "edit_count":

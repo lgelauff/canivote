@@ -28,6 +28,26 @@ WIKI_NAMES = {
 NAMESPACES = {"article": "0", "all": None}
 
 
+def namespace_parameter(namespace):
+    """What to send as `ucnamespace` for a policy's `namespace`, or ValueError.
+
+    Either one of the two words above, or a list of namespace numbers. Numbers,
+    not names, because the numbers are what differ between wikis: Portal is 100
+    on Ukrainian Wikipedia and something else, or nothing, elsewhere. A policy
+    that lists them says exactly what it counts on the one wiki it is about.
+    """
+    if isinstance(namespace, str) and namespace in NAMESPACES:
+        return NAMESPACES[namespace]
+    if (isinstance(namespace, list) and namespace
+            and all(isinstance(n, int) and not isinstance(n, bool) and n >= 0
+                    for n in namespace)):
+        return "|".join(str(n) for n in sorted(set(namespace)))
+    raise ValueError(
+        f"namespace {namespace!r} is not one of {', '.join(sorted(NAMESPACES))} "
+        "or a list of namespace numbers such as [0, 10, 14]"
+    )
+
+
 class UnknownMetric(Exception):
     """A policy names a quantity this tool cannot measure."""
 
@@ -99,16 +119,20 @@ def time_since_first_edit(lookup, as_of, *, wiki):
 
 def edit_count(lookup, as_of, *, wiki, namespace="all", within=None, cap=None):
     """How many edits the account made, optionally in one namespace or window."""
-    if namespace not in NAMESPACES:
-        raise UnknownMetric(f"namespace '{namespace}'")
+    try:
+        selected = namespace_parameter(namespace)
+    except ValueError:
+        raise UnknownMetric(f"namespace '{namespace}'") from None
     counted, exact = lookup.count_contributions(
-        wiki, namespace=NAMESPACES[namespace],
+        wiki, namespace=selected,
         since=(as_of - within) if within else None,
         before=as_of, cap=cap or 1,
     )
     label = f"edits on {wiki_name(wiki)}"
     if namespace == "article":
         label = f"article-namespace {label}"
+    elif isinstance(namespace, list):
+        label = f"edits in namespaces {selected.replace('|', ', ')} on {wiki_name(wiki)}"
     if within:
         label += f" in the {describe_span(within)} before that"
     return (counted if exact else AtLeast(counted)), label
