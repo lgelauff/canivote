@@ -13,10 +13,16 @@ be able to follow by hand. So it is asserted here directly.
 
 
 from app import GLOBAL_BASELINE, POLICIES, baseline_rules
+from rules import group_kind
 
 
 def _metrics(rules):
-    return [rule["metric"] for rule in rules]
+    """Every metric a list of rules names, including inside any_of / all_of."""
+    found = []
+    for rule in rules:
+        kind = group_kind(rule)
+        found += _metrics(rule[kind]) if kind else [rule["metric"]]
+    return found
 
 
 def test_a_policy_that_states_a_rule_itself_gets_it_identified_as_policy():

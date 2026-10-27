@@ -12,7 +12,7 @@ hand, against the live API, whenever a fixture needs to be re-recorded:
 
     .venv/bin/python tests/_record_fixtures.py
 
-It calls the same code paths app.py uses (Lookup.account, rules.apply) with a
+It calls the same code paths app.py uses (Lookup.account, rules.evaluate) with a
 FIXED moment so the generated query URLs are reproducible, captures every
 (url -> response JSON) pair, redacts the real username to "ExampleUser", and
 writes one JSON file per scenario into tests/fixtures/.
@@ -83,7 +83,7 @@ def record_policy(policy_id, policies):
         # policy's own rules would miss the platform ones and leave the fixtures
         # unable to answer half of what a real request asks.
         for rule in baseline_rules(policy) + policy["rules"]:
-            rules.apply(lookup, rule, FIXED_MOMENT)
+            rules.evaluate(lookup, rule, FIXED_MOMENT)
 
     record(policy_id, run)
 
