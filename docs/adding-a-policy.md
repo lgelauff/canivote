@@ -187,6 +187,8 @@ The project's automatic checks run within a few minutes:
 | `… got an unexpected keyword argument 'wiki'` | That metric takes no `wiki`. Remove it. |
 | `… missing a required argument: 'wiki'` | Add `wiki:` to that rule. |
 | `namespace … is not one of …` | Use `article`, `all`, or a list of numbers. |
+| `'within': … is not a duration` (or `'offset'`, `'value'`) | Write a number of days, or `{amount: 3, unit: months}`. The unit is plural: `months`, not `month`. |
+| `has no 'value'` | Every rule needs a `value:` line, the number or setting it is compared with. |
 | `'any_of' needs a list of at least two rules` | Add a second rule, or drop the group. |
 | `has no 'metric', and is not a group` | Check the indentation of that rule. |
 | `mapping values are not allowed here` | YAML layout: check indentation and colons. |

@@ -69,3 +69,47 @@ def test_a_missing_required_parameter_is_refused(tmp_path):
     path = _write(tmp_path, {"metric": "is_blocked", "operator": "is", "value": False})
     with pytest.raises(ValueError, match="missing a required"):
         load_policies(path)
+
+
+@pytest.mark.parametrize("key,value", [
+    ("within", {"amount": 12, "unit": "month"}),   # singular: the likeliest typo
+    ("within", "12 months"),
+    ("within", {"amount": -1, "unit": "days"}),
+    ("offset", {"amount": 1}),
+    ("offset", {"amount": 1, "unit": "weeks", "extra": 0}),
+    ("offset", True),
+])
+def test_a_duration_we_cannot_read_is_refused_by_name(tmp_path, key, value):
+    """It used to load, then break the rule on every request: every voter
+    came back "could not be checked", with a KeyError buried in the response."""
+    path = _write(tmp_path, {"metric": "edit_count", "wiki": "nl.wikipedia.org",
+                             "operator": "at_least", "value": 5, key: value})
+    with pytest.raises(ValueError, match=f"'{key}': .* is not a duration"):
+        load_policies(path)
+
+
+def test_a_time_threshold_we_cannot_read_is_refused_by_name(tmp_path):
+    path = _write(tmp_path, {"metric": "time_since_first_edit", "wiki": "nl.wikipedia.org",
+                             "operator": "at_least", "value": {"amount": 2, "unit": "fortnights"}})
+    with pytest.raises(ValueError, match="'value': .* is not a duration"):
+        load_policies(path)
+
+
+@pytest.mark.parametrize("rule", [
+    {"metric": "edit_count", "wiki": "nl.wikipedia.org", "operator": "at_least"},
+    {"metric": "user_groups", "wiki": "nl.wikipedia.org", "operator": "includes"},
+])
+def test_a_rule_without_a_value_is_refused_by_name(tmp_path, rule):
+    """edit_count used to crash startup with a bare KeyError; user_groups loaded
+    and then failed on every request."""
+    with pytest.raises(ValueError, match="has no 'value'"):
+        load_policies(_write(tmp_path, rule))
+
+
+@pytest.mark.parametrize("key,value", [
+    ("within", 30), ("within", {"amount": 12, "unit": "months"}),
+    ("offset", {"amount": 1, "unit": "weeks"}), ("offset", 0),
+])
+def test_a_readable_duration_still_loads(tmp_path, key, value):
+    assert load_policies(_write(tmp_path, {"metric": "edit_count", "wiki": "nl.wikipedia.org",
+                                           "operator": "at_least", "value": 5, key: value}))

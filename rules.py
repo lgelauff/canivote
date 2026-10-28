@@ -113,6 +113,25 @@ def tag(result, source):
     return tagged
 
 
+def check_duration(value):
+    """Raise ValueError unless `as_duration` can read `value`.
+
+    Run at startup, so that `unit: month` (singular) or `"12 months"` is refused
+    by name instead of loading and then breaking the rule on every request.
+    """
+    def whole(number):
+        return isinstance(number, int) and not isinstance(number, bool) and number >= 0
+    if whole(value):
+        return
+    if (isinstance(value, dict) and set(value) == {"amount", "unit"}
+            and whole(value["amount"]) and value["unit"] in UNITS):
+        return
+    raise ValueError(
+        f"{value!r} is not a duration: write a number of days, or "
+        f"{{amount: N, unit: {'|'.join(UNITS)}}}"
+    )
+
+
 def as_duration(value):
     """{'amount': 2, 'unit': 'weeks'} -> timedelta. Plain integers mean days."""
     if isinstance(value, dict):

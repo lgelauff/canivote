@@ -191,6 +191,22 @@ def _check_rule(policy_id, rule):
             f"policy '{policy_id}': unknown operator {rule.get('operator')!r}. "
             f"Known: {', '.join(sorted(rules.OPERATORS))}"
         )
+    # Without a value there is nothing to compare against. It used to surface
+    # as a bare KeyError at startup for some metrics and load silently for others.
+    if "value" not in rule:
+        raise ValueError(f"policy '{policy_id}': rule {rule['metric']!r} has no 'value'")
+    # A duration that as_duration cannot read would load fine and then break the
+    # rule on every request, making every voter "could not be checked".
+    durations = [key for key in ("offset", "within") if key in rule]
+    if rule["metric"] in rules.DURATION_METRICS:
+        durations.append("value")
+    for key in durations:
+        try:
+            rules.check_duration(rule[key])
+        except ValueError as wrong:
+            raise ValueError(
+                f"policy '{policy_id}': rule {rule['metric']!r}, '{key}': {wrong}"
+            ) from None
     # Names are not enough: a metric that takes no wiki, given one,
     # or one that requires a wiki, given none, both load fine and then
     # raise TypeError at request time as a 500. Bind the parameters
