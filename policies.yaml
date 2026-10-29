@@ -218,3 +218,91 @@ frwiki-sondage:
     surveys, and "no formal requirement" is a real answer rather than missing
     data. A site-wide block bars a user from editing any page including the
     vote, so the platform applies that check regardless.
+
+ukwiki-adminship:
+  wiki: uk.wikipedia.org
+  language: uk
+  title: Voting in adminship requests on Ukrainian Wikipedia
+  scope: >-
+    Votes on requests for administrator rights (Заявки на права адміністратора,
+    ВП:ЗПА).
+  sources:
+    - https://uk.wikipedia.org/wiki/%D0%92%D1%96%D0%BA%D1%96%D0%BF%D0%B5%D0%B4%D1%96%D1%8F:%D0%97%D0%B0%D1%8F%D0%B2%D0%BA%D0%B8_%D0%BD%D0%B0_%D0%BF%D1%80%D0%B0%D0%B2%D0%B0_%D0%B0%D0%B4%D0%BC%D1%96%D0%BD%D1%96%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%BE%D1%80%D0%B0
+    - https://uk.wikipedia.org/wiki/%D0%92%D1%96%D0%BA%D1%96%D0%BF%D0%B5%D0%B4%D1%96%D1%8F:%D0%97%D0%B0%D1%8F%D0%B2%D0%BA%D0%B8_%D0%BD%D0%B0_%D0%BF%D1%80%D0%B0%D0%B2%D0%B0_%D0%B0%D0%B4%D0%BC%D1%96%D0%BD%D1%96%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%BE%D1%80%D0%B0/Header
+    - https://uk.wikipedia.org/w/index.php?diff=41112004
+  verified: 2026-10-27
+  original_text: >-
+    Голосувати можуть лише зареєстровані користувачі, які на момент початку
+    голосування мають: права патрульного або принаймні 500 редагувань в
+    основному просторі та стаж у Вікіпедії не менше трьох місяців; принаймні 5
+    редагувань основного простору назв, або будь-якого іншого простору назв,
+    який має безпосередній стосунок до основного контенту Вікіпедії (Шаблон,
+    Категорія, Файл, Модуль, MediaWiki або Портал) в проміжку: 3 календарних
+    місяці — 1 тиждень до початку номінації. У разі виникнення спірних
+    випадків рішення щодо них ухвалюється бюрократами. За себе не можна
+    голосувати.
+  english: >-
+    Only registered users may vote who, when voting opens, have (1) patroller
+    rights, or at least 500 article edits and at least three months on the
+    wiki; and (2) at least 5 edits to articles or to another namespace directly
+    tied to the encyclopedic content (Template, Category, File, Module,
+    MediaWiki or Portal) between 3 calendar months and 1 week before the
+    nomination opened. Bureaucrats decide disputed cases. You may not vote for
+    yourself.
+  rules:
+    - any_of:
+        - metric: user_groups
+          wiki: uk.wikipedia.org
+          operator: includes
+          value: editor
+        - all_of:
+            - metric: edit_count
+              wiki: uk.wikipedia.org
+              namespace: article
+              operator: at_least
+              value: 500
+            - metric: time_since_first_edit
+              wiki: uk.wikipedia.org
+              operator: at_least
+              value: {amount: 3, unit: months}
+    - metric: edit_count
+      wiki: uk.wikipedia.org
+      namespace: [0, 6, 8, 10, 14, 100, 828]
+      offset: {amount: 1, unit: weeks}
+      within: 83
+      operator: at_least
+      value: 5
+  not_modelled:
+    - >-
+      "У разі виникнення спірних випадків рішення щодо них ухвалюється
+      бюрократами" — disputed cases are decided by bureaucrats. A verdict here
+      is not the final word on a contested vote.
+    - >-
+      "За себе не можна голосувати" — a candidate may not vote on their own
+      request. That depends on the vote, not the account.
+  notes: >-
+    The first clause groups as "patroller, OR (500 article edits AND three
+    months)": patrollers need neither the edit count nor the time on the wiki.
+    That reading is taken from the talk-page summary in diff 41112004
+    (2023-12-10), which moved "стаж" from its own line, where it applied to
+    everyone, into the 500-edits alternative. "Стаж" is measured from the first
+    edit, as in the Dutch and German policies.
+
+    "Права патрульного" is the `editor` user group, which this wiki names
+    "Патрульні" (MediaWiki:Group-editor-member is "патрульний"). Group
+    membership is read as it is now, not as of `as_of`, so a patroller flag
+    granted or removed since the vote opened shows its current state.
+
+    Pass `as_of` set to the opening of the vote. The second clause is anchored
+    on the start of the nomination instead; voting runs from the candidate's
+    confirmation, usually close to the nomination but not always the same
+    moment. Its window ends one week before the anchor (`offset`) and starts
+    three months before it: 90 days back, written as `within: 83` days behind
+    the offset. The policy says calendar months, so this can differ from the
+    calendar by up to two days.
+
+    The namespaces counted are those the policy lists: article (0), File (6),
+    MediaWiki (8), Template (10), Category (14), Portal (100) and Module (828).
+    The list is read as exhaustive, so TimedText (710) is not counted.
+
+    One check costs six Wikimedia API calls, the most the rate limit allows for.
