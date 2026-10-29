@@ -135,6 +135,23 @@ Field notes:
   wiki actually says — the sources are listed so you can check.
 - `queries` lists the exact upstream API URLs used to reach the verdict. Anyone can open
   one in a browser and see exactly what this tool saw.
+- An entry in `criteria` is either a single criterion (it has `metric`) or a **group** (it
+  has `group`, which is `any_of` or `all_of`, plus its own `passed` and a nested
+  `criteria` list). Switch on which key is present. Every member of a group is evaluated
+  and shown, so a reader can see which route they qualified by:
+
+  ```json
+  {
+    "group": "any_of",
+    "label": "at least one of these",
+    "passed": true,
+    "criteria": [
+      {"metric": "user_groups", "passed": true, "...": "..."},
+      {"group": "all_of", "label": "all of these", "passed": false, "criteria": ["..."]}
+    ],
+    "source": "policy"
+  }
+  ```
 
 
 ### Other endpoints
@@ -190,6 +207,11 @@ legitimate use, open an issue rather than working around it.
 
 ## Adding a policy
 
+Step-by-step guides, written for someone who has not worked on this code before:
+
+- [How to add a new policy](docs/adding-a-policy.md) — no programming needed.
+- [How to add a new metric](docs/adding-a-metric.md) — a small Python change.
+
 Everything a wiki's eligibility rule decomposes into lives in `policies.yaml`, one entry
 per policy. It carries the community's wording verbatim, an English rendering of it, and
 the rules that wording becomes — a reviewable diff, not a code change. `/policies` serves
@@ -199,6 +221,8 @@ A rule is one metric (see `metrics.py` for what can be measured — edit counts,
 since first edit, block/lock state, user groups, and so on), one operator (`at_least`,
 `more_than`, `at_most`, `fewer_than`, `is`, `includes`, `excludes`), and one value.
 Durations can be a plain integer of days or `{amount: N, unit: days|weeks|months|years}`.
+`edit_count` takes a `namespace` of `article`, `all`, or a list of namespace numbers on
+that wiki, such as `[0, 10, 14]`.
 Not everything is modellable: a clause requiring human judgement (e.g. "excluding
 vandalism") should not be silently dropped. List it under that policy's `not_modelled`
 instead, so a verdict never looks more complete than it actually is.
@@ -208,6 +232,39 @@ by one row for `more_than`, `at_most` and `is` — enough to distinguish "exactl
 "more than N". What `load_policies()` refuses at import time is a *threshold* the API
 cannot count to: the ceiling is 500 rows, so a policy demanding 600 edits is rejected at
 startup rather than failing every voter at request time while reporting "at least 500".
+
+### Either/or rules
+
+A policy's rules must **all** hold. When a community writes "this, or that", put the
+alternatives in an `any_of` group; to require several things together inside one
+alternative, use `all_of`. Ukrainian Wikipedia's adminship votes are an example: a voter
+needs patroller rights, *or* 500 article edits and three months on the wiki.
+
+```yaml
+rules:
+  - any_of:                           # at least one of these
+      - metric: user_groups
+        wiki: uk.wikipedia.org
+        operator: includes
+        value: editor                 # the group ukwiki calls "патрульні"
+      - all_of:                       # all of these, together
+          - metric: edit_count
+            wiki: uk.wikipedia.org
+            namespace: article
+            operator: at_least
+            value: 500
+          - metric: time_since_first_edit
+            wiki: uk.wikipedia.org
+            operator: at_least
+            value: {amount: 3, unit: months}
+  - metric: edit_count                # and, separately, this must hold too
+    ...
+```
+
+This is an inclusive OR, not an XOR: a patroller who *also* has 500 edits qualifies, as
+the policy intends. A group needs at least two members and may nest. A member that
+could not be checked is never read as a pass: the group passes as soon as one member
+passes, fails only when every member fails, and is otherwise "could not be checked".
 
 ## Privacy: the access log
 
