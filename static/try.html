@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>canivote — try it</title>
+<meta name="description" content="Choose a voting policy and a Wikimedia account, and see the canivote API request and its answer.">
+<link rel="stylesheet" href="static/try.css">
+<script src="static/try.js" defer></script>
+</head>
+<body>
+<main>
+  <header>
+    <h1>canivote <span class="subtitle">try it</span></h1>
+    <p class="lede">Does a Wikimedia account meet a community's voting rule? Choose a
+      policy and an account. The page shows the request it sends to the canivote API and
+      the answer that comes back. Anything you can do here, you can do with the URL alone.</p>
+  </header>
+
+  <!-- Without JavaScript this is a plain GET form, and the browser shows the JSON. -->
+  <form id="form" action="check" method="get" novalidate>
+    <div class="field">
+      <label for="policy">Policy</label>
+      <select id="policy" name="policy" required>
+        <option value="" disabled selected>Loading policies…</option>
+      </select>
+      <div id="policy-info" class="hint" hidden></div>
+    </div>
+
+    <div class="field">
+      <label for="user">Account</label>
+      <input id="user" name="user" type="text" required autocomplete="off"
+             autocapitalize="off" spellcheck="false" placeholder="Username">
+      <p class="hint">A Wikimedia username, without “User:”.</p>
+    </div>
+
+    <fieldset class="field">
+      <legend>Measured as of</legend>
+      <label class="choice"><input type="radio" id="when-now" name="when" value="now" checked> Now</label>
+      <label class="choice"><input type="radio" id="when-moment" name="when" value="moment"> A specific moment (UTC)</label>
+      <input id="as_of" name="as_of" type="datetime-local" step="1" disabled
+             aria-label="Moment to measure from, in UTC">
+      <p class="hint">Most rules count from a moment, such as the opening of a vote. Give
+        that moment here; otherwise the rule is measured from the time you press Check.</p>
+    </fieldset>
+
+    <button id="submit" type="submit">Check</button>
+  </form>
+
+  <section id="request" aria-labelledby="request-heading">
+    <h2 id="request-heading">The request</h2>
+    <p id="request-missing" class="hint">Incomplete: choose a policy and an account to finish the request.</p>
+    <dl class="request">
+      <dt>URL</dt>
+      <dd><code id="url"></code> <button type="button" class="copy" data-copy="url">Copy</button></dd>
+      <dt>curl</dt>
+      <dd><code id="curl"></code> <button type="button" class="copy" data-copy="curl">Copy</button></dd>
+    </dl>
+    <p class="hint">This one call is all the page makes; canivote then asks Wikimedia. The
+      full contract is at <a href="openapi.json">/openapi.json</a>.</p>
+  </section>
+
+  <section id="result" aria-labelledby="result-heading" hidden>
+    <h2 id="result-heading">The response</h2>
+    <p id="status" class="status" aria-live="polite"></p>
+    <div id="answer"></div>
+    <details id="raw">
+      <summary>Raw JSON</summary>
+      <button type="button" class="copy" data-copy="raw-body">Copy</button>
+      <pre><code id="raw-body"></code></pre>
+    </details>
+  </section>
+
+  <footer>
+    <a href="./">API index</a> · <a href="policies">All policies (JSON)</a> ·
+    <a href="https://github.com/lgelauff/canivote">Source code</a>
+  </footer>
+</main>
+</body>
+</html>

@@ -161,6 +161,11 @@ Field notes:
   query.
 - `GET /health` — for uptime checks.
 - `GET /` — name, repository, and a list of endpoints.
+- `GET /try` — a page for people rather than programs: choose a policy and an account,
+  and see the `/check` URL (with a `curl` line), the verdict rule by rule, the Wikimedia
+  API calls behind it, and the raw JSON. It uses only the public endpoints above, loads
+  nothing from outside Toolforge, and never runs a check until you press the button, so a
+  shared link (`/try?policy=…&user=…`) fills in the form without spending any API calls.
 
 ## What this tool does not do
 
