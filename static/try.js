@@ -248,10 +248,16 @@ async function check(event) {
   let body = null;
   try { body = JSON.parse(text); } catch { /* shown raw below */ }
   const version = response.headers.get("Canivote-Version");
-  $("status").textContent = `HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ""}`
+  const isVerdict = Boolean(response.ok && body && body.verdict);
+  // The status line is the live region, so it carries the answer itself: a
+  // screen reader announces it, and would otherwise hear only "HTTP 200".
+  const headline = isVerdict
+    ? (VERDICTS[body.verdict] || [body.verdict])[0]
+    : (body && body.error ? body.error : "Request failed");
+  $("status").textContent = `${headline} · HTTP ${response.status}`
+    + `${response.statusText ? ` ${response.statusText}` : ""}`
     + ` · ${took}${version ? ` · canivote ${version}` : ""}`;
-  $("answer").replaceChildren(...(response.ok && body && body.verdict
-    ? renderVerdict(body) : renderError(body, response)));
+  $("answer").replaceChildren(...(isVerdict ? renderVerdict(body) : renderError(body, response)));
   $("raw-body").textContent = body ? JSON.stringify(body, null, 2) : text;
 }
 

@@ -100,7 +100,11 @@ def test_the_script_only_calls_public_endpoints():
 
 
 def test_the_form_still_works_without_javascript(client):
-    """With scripts off the form is a plain GET to /check using its own parameter names."""
+    """With scripts off the form is a plain GET to /check using its own parameter names.
+
+    The policy list is filled in by the script, so without it the page says
+    how to call /check directly (the <noscript> note) rather than pretend.
+    """
     page = _parsed(client)
     form = next(attrs for tag, attrs in page.tags if tag == "form")
     assert (form["action"], form["method"]) == ("check", "get")
