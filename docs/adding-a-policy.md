@@ -156,7 +156,8 @@ require several things together as one of the alternatives, use `all_of` inside 
               value: {amount: 3, unit: months}
 ```
 
-A group needs at least two rules in it.
+A group needs at least two rules in it. `policies.yaml` has a full real example:
+`ukwiki-adminship`.
 
 ### YAML tips
 

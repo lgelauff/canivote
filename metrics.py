@@ -19,6 +19,7 @@ WIKI_NAMES = {
     "en.wikipedia.org": "English Wikipedia",
     "nl.wikipedia.org": "Dutch Wikipedia",
     "de.wikipedia.org": "German Wikipedia",
+    "uk.wikipedia.org": "Ukrainian Wikipedia",
     "meta.wikimedia.org": "Meta-Wiki",
     "commons.wikimedia.org": "Wikimedia Commons",
 }

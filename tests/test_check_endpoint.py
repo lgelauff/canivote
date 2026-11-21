@@ -126,4 +126,4 @@ def test_index_and_health(client):
     assert client.get("/").status_code == 200
     health = client.get("/health").get_json()
     assert health["status"] == "ok"
-    assert health["policies"] == 5
+    assert health["policies"] == 6

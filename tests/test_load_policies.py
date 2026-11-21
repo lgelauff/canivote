@@ -69,4 +69,4 @@ def test_every_operator_is_allowed_within_the_ceiling(tmp_path, operator):
 def test_the_real_policies_file_loads_clean():
     from pathlib import Path
     policies = load_policies(Path(__file__).parent.parent / "policies.yaml")
-    assert len(policies) == 5
+    assert len(policies) == 6
