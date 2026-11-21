@@ -29,6 +29,11 @@ def _check(client, monkeypatch, **facts):
     ({"counts": {"0": 500, WINDOW: 5}, "first_edit_days_ago": 120}, "eligible"),
     ({"counts": {"0": 499, WINDOW: 5}, "first_edit_days_ago": 120}, "not_eligible"),
     ({"counts": {"0": 500, WINDOW: 5}, "first_edit_days_ago": 80}, "not_eligible"),
+    # Three months is 90 days: exactly at the threshold, and one day short.
+    ({"counts": {"0": 500, WINDOW: 5}, "first_edit_days_ago": 90}, "eligible"),
+    ({"counts": {"0": 500, WINDOW: 5}, "first_edit_days_ago": 89}, "not_eligible"),
+    # The recent-activity clause binds the 500-edits route too.
+    ({"counts": {"0": 500, WINDOW: 4}, "first_edit_days_ago": 120}, "not_eligible"),
     # The recent-activity clause applies to everyone, patrollers included.
     ({"groups": ["editor"], "counts": {WINDOW: 4}}, "not_eligible"),
     # Autopatrolled is a different group and is not patroller rights.
