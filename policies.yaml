@@ -15,7 +15,6 @@ nlwiki-stemprocedure:
   scope: All votes (stemmingen) held under the Stemprocedure
   sources:
     - https://nl.wikipedia.org/wiki/Wikipedia:Stemprocedure
-    - https://nl.wikipedia.org/wiki/Wikipedia:Stemlokaal/Stemgerechtigde_gebruikers
   verified: 2026-09-01
   original_text: >-
     Stemmen mag iedere gebruiker met bewerkingsrechten op de stempagina,
@@ -63,10 +62,6 @@ nlwiki-stemprocedure:
 
     Voting rights, once earned, are held for life ("voor het leven"): nl.wikipedia
     sets no ongoing-activity requirement, so nothing here expires.
-
-    The second source page records a 2018 proposal to add an activity requirement
-    for person-elections. It was NOT adopted, and is cited only so a reader who
-    finds it knows it does not apply.
 
 dewiki-stimmberechtigung:
   wiki: de.wikipedia.org
