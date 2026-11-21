@@ -271,6 +271,16 @@ def _headers(response):
     # means an on-wiki gadget can use this without waiting for a redeploy.
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Canivote-Version"] = VERSION
+    if request.path == "/try":
+        # The page loads only its own script and stylesheet and talks only to
+        # this tool. Saying so in the header means a bug in how it renders a
+        # response cannot turn into running someone else's code.
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'none'; script-src 'self'; style-src 'self'; "
+            "connect-src 'self'; img-src 'self'; base-uri 'none'; "
+            "form-action 'self'; frame-ancestors 'none'"
+        )
+        response.headers["X-Content-Type-Options"] = "nosniff"
     if request.path == "/check":
         # Every /check URL is a fan-out to Wikimedia. Search engines following
         # them from a wiki page would amplify far past any one client, and a
@@ -300,11 +310,22 @@ def index():
         version=VERSION,
         endpoints={
             "/check": "?user=<name>&policy=<id>",
+            "/try": "a page for trying /check in a browser",
             "/policies": "every policy and the rules a person wrote from it",
             "/health": "uptime check",
             "/openapi.json": "this API's OpenAPI 3.1 contract",
         },
     )
+
+
+@app.get("/try")
+def try_page():
+    """A page for people: choose a policy and an account, see the request and answer.
+
+    It is a client of the API like any other, so it only ever calls /policies
+    and /check, and is not part of the API contract itself.
+    """
+    return app.send_static_file("try.html")
 
 
 @app.get("/health")
